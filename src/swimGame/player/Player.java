@@ -29,7 +29,12 @@ public class Player extends AbstractPlayer {
 	@Override
 	public boolean keepCardSet() {
 		// TODO: base decision also on card colors
-		this.rateCards();
+		byte[] cards = this.rateCards();
+		Debug.println(
+				this,
+				"Looks I'll drop "
+						+ this.cardUtils.cardToString(new int[] { cards[6],
+								cards[7] }) + ".");
 		return true;
 	}
 
@@ -166,7 +171,83 @@ public class Player extends AbstractPlayer {
 			}
 		}
 
-		Debug.println(this, "Looks I'll drop " + rating.length + ".");
-		return rating;
+		return this.rankCardRating(rating);
+	}
+
+	/**
+	 * Sort the ranked cards by their rating value (best-first).
+	 * 
+	 * @param rating
+	 *            The ranked cards as flat byte array
+	 * @return The ranked cards as flat byte-array
+	 */
+	private byte[] rankCardRating(byte[] rating) {
+		// shortcuts do clean it up a bit
+		byte val1 = rating[2];
+		byte val2 = rating[5];
+		byte val3 = rating[8];
+		if (val1 > val2) {
+			// val1 > val2
+			if (val1 > val3) {
+				// (val1 > val2) && (val1 > val3)
+				if (val2 > val3) {
+					// val1 > val2 > val3
+					// no changes needed
+					return rating;
+				} else {
+					// val1 > val3 > val2
+					return new byte[] {
+							// val1
+							rating[0], rating[1], rating[2],
+							// val3
+							rating[6], rating[7], rating[8],
+							// val2
+							rating[3], rating[4], rating[5] };
+
+				}
+			} else {
+				// val3 > val1 > val2
+				return new byte[] {
+						// val3
+						rating[6], rating[7], rating[8],
+						// val1
+						rating[0], rating[1], rating[2],
+						// val2
+						rating[3], rating[4], rating[5] };
+			}
+		} else {
+			// val2 > val1
+			if (val2 > val3) {
+				// (val2 > val1) && (val2 > val3)
+				if (val1 > val3) {
+					// val2 > val1 > val3
+					return new byte[] {
+							// val2
+							rating[3], rating[4], rating[5],
+							// val1
+							rating[0], rating[1], rating[2],
+							// val3
+							rating[6], rating[7], rating[8] };
+				} else {
+					// val2 > val3 > val1
+					return new byte[] {
+							// val2
+							rating[3], rating[4], rating[5],
+							// val3
+							rating[6], rating[7], rating[8],
+							// val1
+							rating[0], rating[1], rating[2] };
+				}
+			} else {
+				// val3 > val2 > val1
+				return new byte[] {
+						// val3
+						rating[6], rating[7], rating[8],
+						// val2
+						rating[3], rating[4], rating[5],
+						// val1
+						rating[0], rating[1], rating[2] };
+			}
+		}
 	}
 }
