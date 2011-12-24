@@ -18,9 +18,67 @@ public class Player extends AbstractPlayer {
 	 */
 	private final byte selfRiskyness = 9;
 
+	private final InnerCardRating cardRating = new InnerCardRating();
+
 	/** Constructor */
 	public Player() {
 		super();
+	}
+
+	/**
+	 * Card Rating
+	 * 
+	 * Each rate.* function returns a value between 0 (bad) and 10 (best).
+	 * 
+	 * @author Jens Bertram <code@jens-bertram.net>
+	 * 
+	 */
+	private class InnerCardRating {
+		public int rateStack(CardStack cardStack) {
+			return this.rateStackByArray(cardStack.getArray());
+		}
+
+		private int rateStackByArray(byte[][] cardStack) {
+			this.rateMaxStackValue(cardStack);
+			return 0;
+		}
+
+		/**
+		 * Calculates the value of a card belonging to a stack
+		 * 
+		 * @param card
+		 *            The number representing the card in the stack
+		 * @return The card value
+		 */
+		public int getStackCardValue(int card) {
+			// normalize card values
+			if (card > 2) {
+				// B, D, K -> 3; A -> 4
+				return card < 7 ? 3 : 4;
+			} else {
+				// 7 -> 0; 8 -> 1; 9 -> 2 (basically their array locations)
+				return card;
+			}
+		}
+
+		private int rateMaxStackValue(byte[][] cardStack) {
+			// discount by 9 for each card (9 is avg card value)
+			// missing a color-card counts two times the discount
+			int foundCards[] = new int[] { -1, -1, -1 };
+			int cardIndex = 0;
+
+			// iterate over every color
+			for (int color = 0; color < (CardStack.CARDS_MAX_COLOR); color++) {
+				// iterate over every card
+				for (int card = 0; card < (CardStack.CARDS_MAX_CARD); card++) {
+					if (cardStack[card][color] == 1) {
+						foundCards[cardIndex++] = card;
+						// int value = this.getStackCardValue(card);
+					}
+				}
+			}
+			return 0;
+		}
 	}
 
 	/**
@@ -35,6 +93,15 @@ public class Player extends AbstractPlayer {
 				"Looks I'll drop "
 						+ this.cardUtils.cardToString(new int[] { cards[6],
 								cards[7] }) + ".");
+		return true;
+	}
+
+	/**
+	 * Check if the cards we own can be used to end the game
+	 * 
+	 * @return True if we can drop
+	 */
+	private boolean cardsDropable() {
 		return true;
 	}
 
@@ -79,14 +146,7 @@ public class Player extends AbstractPlayer {
 				int sameType = 0;
 				sameColor++;
 
-				// normalize card values
-				if (card > 2) {
-					// B, D, K -> 3; A -> 4
-					cardValue = (byte) (card < 7 ? 3 : 4);
-				} else {
-					// 7 -> 0; 8 -> 1; 9 -> 2 (basically their array places)
-					cardValue = (card);
-				}
+				cardValue = this.cardRating.getStackCardValue(card);
 
 				// see if we already own a card of the current color
 				if (sameColor > 1) {
