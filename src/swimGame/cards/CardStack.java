@@ -181,4 +181,60 @@ public class CardStack {
 	public void removeCard(final int[] card) {
 		this.cardStack[card[0]][card[1]] = 0;
 	}
+
+	public byte[] getCardsByColor(byte color) throws IllegalArgumentException {
+		if ((color < 0) || (color > CardStack.CARDS_MAX_COLOR)) {
+			throw new IllegalArgumentException(String.format(
+					"Card color %d out of bounds (%d-%d)", color, 0,
+					CardStack.CARDS_MAX_COLOR));
+		}
+
+		// we have three cards max..
+		byte[] cards = new byte[] { -1, -1, -1 };
+		// ..track them
+		int cardCount = 0;
+
+		// go through cards..
+		for (byte card = 0; card < CardStack.CARDS_MAX_CARD; card++) {
+			// ..to check if we own it..
+			if (this.cardStack[card][color] == 0) {
+				// ..no we don't - check next
+				continue;
+			}
+			cards[cardCount++] = card;
+
+			if (cardCount > 3) {
+				break;
+			}
+		}
+		return cards;
+	}
+
+	public byte[] getCardsByType(byte cardType) throws IllegalArgumentException {
+		if ((cardType < 0) || (cardType > CardStack.CARDS_MAX_CARD)) {
+			throw new IllegalArgumentException(String.format(
+					"Card type %d out of bounds (%d-%d)", cardType, 0,
+					CardStack.CARDS_MAX_CARD));
+		}
+
+		// we have three cards max..
+		byte[] cards = new byte[] { -1, -1, -1 };
+		// ..track them
+		int cardCount = 0;
+
+		// go through cards..
+		for (byte color = 0; color < CardStack.CARDS_MAX_COLOR; color++) {
+			// ..to check if we own it..
+			if (this.cardStack[cardType][color] == 0) {
+				// ..no we don't - check next
+				continue;
+			}
+			cards[cardCount++] = cardType;
+
+			if (cardCount > 3) {
+				break;
+			}
+		}
+		return cards;
+	}
 }

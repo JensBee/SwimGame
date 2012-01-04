@@ -36,6 +36,16 @@ public class Player extends AbstractPlayer {
 	private class Cards {
 		CardStack cs;
 
+		// rating influencing parameters
+		protected final byte INF_SAME_COLOR = 10;
+		protected final byte INF_SAME_TYPE = 0;
+
+		// the maximum value a stack rating may reach
+		protected final int cardStackMaxRating = (2 * this.INF_SAME_TYPE)
+				+ this.getStackCardValue(CardStack.CARDS_MAX)
+				+ this.getStackCardValue(CardStack.CARDS_MAX - 1)
+				+ this.getStackCardValue(CardStack.CARDS_MAX - 2);
+
 		/**
 		 * Constructor
 		 */
@@ -46,14 +56,9 @@ public class Player extends AbstractPlayer {
 			this.cs = cs;
 		}
 
-		// public int rateStack(CardStack cardStack) {
-		// return this.rateStackByArray(cardStack.getArray());
-		// }
-		//
-		// private int rateStackByArray(byte[][] cardStack) {
-		// this.rateMaxStackValue(cardStack);
-		// return 0;
-		// }
+		protected int normalizeRating(double max, double value) {
+			return new Double(((value - 0) / (max - 0)) * 10).intValue();
+		}
 
 		/**
 		 * Calculates the value of a card belonging to a stack
@@ -62,7 +67,7 @@ public class Player extends AbstractPlayer {
 		 *            The number representing the card in the stack
 		 * @return The card value
 		 */
-		public int getStackCardValue(int card) {
+		protected int getStackCardValue(int card) {
 			// normalize card values
 			if (card > 2) {
 				// B, D, K -> 3; A -> 4
@@ -73,23 +78,56 @@ public class Player extends AbstractPlayer {
 			}
 		}
 
-		// private int rateMaxStackValue(byte[][] cardStack) {
-		// // discount by 9 for each card (9 is avg card value)
-		// // missing a color-card counts two times the discount
-		// int foundCards[] = new int[] { -1, -1, -1 };
-		// int cardIndex = 0;
-		//
-		// // iterate over every color
-		// for (int color = 0; color < (CardStack.CARDS_MAX_COLOR); color++) {
-		// // iterate over every card
-		// for (int card = 0; card < (CardStack.CARDS_MAX_CARD); card++) {
-		// if (cardStack[card][color] == 1) {
-		// foundCards[cardIndex++] = card;
-		// }
-		// }
-		// }
-		// return 0;
-		// }
+		protected double getStackValue() throws IllegalStateException {
+			int count = 0;
+			double value = 0;
+			for (byte color = 0; color < (CardStack.CARDS_MAX_COLOR); color++) {
+				byte[] cardsByColor = this.cs.getCardsByColor(color);
+				for (byte card : cardsByColor) {
+					if (card == -1) {
+						continue;
+					}
+					count++;
+					value = value + this.getStackCardValue(card) + 7;
+				}
+				if (count > 0) {
+					Debug.println(this.getClass(), "Color:" + color + " cards:"
+							+ count + " value:" + value);
+					if (count == 3) {
+						// return the max, if we reached it
+						if (value == 31) {
+							return 31;
+						}
+					}
+				}
+				count = 0;
+				value = 0;
+			}
+
+			for (byte cardType = 0; cardType < (CardStack.CARDS_MAX_CARD); cardType++) {
+				byte[] cardsByType = this.cs.getCardsByType(cardType);
+				for (byte card : cardsByType) {
+					if (card == -1) {
+						continue;
+					}
+					count++;
+					value = value + this.getStackCardValue(card) + 7;
+				}
+				if (count > 0) {
+					Debug.println(this.getClass(), "Card:" + cardType
+							+ " cards:" + count + " value:" + value);
+					if (count == 3) {
+						// return the max, if we reached it
+						return 30.5;
+					}
+				}
+				count = 0;
+				value = 0;
+			}
+			Debug.println(this.getClass(), "Stack isn't dropable!");
+			throw new IllegalStateException(
+					"Your cardstack isn't ready to drop yet!");
+		}
 
 		/**
 		 * 
@@ -98,21 +136,13 @@ public class Player extends AbstractPlayer {
 		 * @return
 		 */
 		protected int rateCard(int[] aCard) {
+			// the rating for this card
 			int cardValue = 0;
-			byte same[] = new byte[] { 0, 0 }; // [card, color]
-
-			// go through cards by same color
-			for (int card = 0; card < CardStack.CARDS_MAX_CARD; card++) {
-				// ..to check if we own it..
-				if (this.cs.getArray()[card][aCard[1]] == 0) {
-					// ..no we don't - check next
-					continue;
-				}
-				same[1] = same[1]++;
-				cardValue = cardValue + this.getStackCardValue(card);
-			}
+			// store occourances [card, color]
+			byte same[] = new byte[] { 0, 0 };
 
 			// go through cards by same type
+			Debug.print("rateCard-type: ");
 			for (int color = 0; color < (CardStack.CARDS_MAX_COLOR); color++) {
 				// ..to check if we own it..
 				if (this.cs.getArray()[aCard[0]][color] == 0) {
@@ -121,8 +151,39 @@ public class Player extends AbstractPlayer {
 				}
 				same[0] = same[0]++;
 				cardValue = cardValue + this.getStackCardValue(aCard[0]);
+				Debug.print(Integer.toString(cardValue));
+
+				// modify rating if there are more cards of this type
+				if (same[0] > 1) {
+					cardValue = cardValue + this.INF_SAME_TYPE;
+					Debug.print("->" + cardValue);
+				}
+				Debug.print("|");
 			}
-			return cardValue;
+			Debug.print("\n");
+
+			// go through cards by same color
+			Debug.print("rateCard-color: ");
+			for (int card = 0; card < CardStack.CARDS_MAX_CARD; card++) {
+				// ..to check if we own it..
+				if (this.cs.getArray()[card][aCard[1]] == 0) {
+					// ..no we don't - check next
+					continue;
+				}
+				same[1] = same[1]++;
+				cardValue = cardValue + this.getStackCardValue(card);
+				Debug.print(Integer.toString(cardValue));
+
+				// modify rating if there are more cards of this color
+				if (same[1] > 1) {
+					cardValue = cardValue + this.INF_SAME_COLOR;
+					Debug.print("->" + cardValue);
+				}
+				Debug.print("|");
+			}
+			Debug.print("\n--\n");
+
+			return this.normalizeRating(this.cardStackMaxRating, cardValue);
 		}
 	}
 
@@ -131,14 +192,24 @@ public class Player extends AbstractPlayer {
 	 */
 	@Override
 	public boolean keepCardSet() {
-		// TODO: base decision also on card colors
+		this.cards.setCardStack(this.cardStack);
 		byte[] cards = this.rateCards();
 		Debug.println(
 				this,
 				String.format(
-						"Looks I'll drop %s.",
+						"Looks like I should drop %s.",
 						this.cardUtils.cardToString(new int[] { cards[6],
 								cards[7] })));
+		try {
+			Debug.println(
+					this,
+					String.format("Stack value is %.1f.",
+							this.cards.getStackValue()));
+		} catch (IllegalStateException e) {
+			// ok, we're not ready yet
+			Debug.println(this, String.format("Stack is not dropable yet."));
+		}
+
 		return true;
 	}
 
@@ -165,7 +236,6 @@ public class Player extends AbstractPlayer {
 		int ratingCount = 0;
 
 		Debug.println(this, "Rating my current cards..");
-		this.cards.setCardStack(this.cardStack);
 
 		// dig through the card-stack by color-rows..
 		for (int color = 0; color < (CardStack.CARDS_MAX_COLOR); color++) {
@@ -176,17 +246,22 @@ public class Player extends AbstractPlayer {
 					continue;
 				}
 				// we do - so rate it
-				int cardRating = this.cards.rateCard(new int[] { card, color });
-				Debug.println(
-						this,
-						String.format(
-								"* NEW Rating %s: %d",
-								this.cardUtils.cardToString(new int[] { card,
-										color }), cardRating));
-				rating[ratingCount++] = (byte) card;
 				rating[ratingCount++] = (byte) color;
-				rating[ratingCount++] = (byte) cardRating;
+				rating[ratingCount++] = (byte) this.cards.rateCard(new int[] {
+						card, color });
 			}
+		}
+
+		// debugging output
+		if (Debug.debug == true) {
+			Debug.print(this, true, "Card ratings: ");
+			for (int i = 0; i < rating.length; i++) {
+				Debug.print(this.cardUtils.cardToString(new int[] { rating[i],
+						rating[i + 1] })
+						+ ":" + rating[i + 2] + " ");
+				i = i + 2;
+			}
+			Debug.print("\n");
 		}
 		return this.rankCardRating(rating);
 	}
