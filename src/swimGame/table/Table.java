@@ -4,11 +4,11 @@ import java.util.ArrayList;
 
 import swimGame.cards.CardStack;
 import swimGame.out.Console;
-import swimGame.player.Player;
+import swimGame.player.DefaultPlayer;
 
 public class Table {
 	/** List of players joined this table */
-	private final ArrayList<Player> players = new ArrayList<Player>();
+	private final ArrayList<DefaultPlayer> players = new ArrayList<DefaultPlayer>();
 	// Table will be closed, if full or the game has begun
 	private boolean tableClosed = false;
 	/** Card stack owned by this table (stack will be full, i.e. has all cards) */
@@ -36,7 +36,7 @@ public class Table {
 	 * 
 	 * @param player
 	 */
-	public void addPlayer(final Player player) throws Exception {
+	public void addPlayer(final DefaultPlayer player) throws Exception {
 		// check if table is already full
 		if ((this.tableClosed == true) || (this.players.size() == 9)) {
 			this.close(); // just to be sure
@@ -56,7 +56,7 @@ public class Table {
 	 */
 	public void addPlayers(final int amount) throws Exception {
 		for (int i = 0; i < amount; i++) {
-			this.addPlayer(new Player());
+			this.addPlayer(new DefaultPlayer());
 		}
 	}
 
@@ -68,7 +68,7 @@ public class Table {
 			this.tableClosed = true;
 			this.currentPlayer = 0;
 			String playerNames = "";
-			for (final Player player : this.players) {
+			for (final DefaultPlayer player : this.players) {
 				playerNames += player.toString() + ", ";
 			}
 			Console.println(Table.CNAME, "*** Table closed ***");
@@ -130,10 +130,10 @@ public class Table {
 	 */
 	private void dealOutCards() throws Exception {
 		// player who starts the game
-		final Player firstPlayer = this.players.get(this.currentPlayer);
+		final DefaultPlayer firstPlayer = this.players.get(this.currentPlayer);
 		this.close(); // game starts now
 		Console.println(Table.CNAME, "Dealing out cards..");
-		for (final Player player : this.players) {
+		for (final DefaultPlayer player : this.players) {
 			// pass initial cards to player
 			player.setCards(this.getPlayerCardSet());
 		}

@@ -2,19 +2,19 @@ package swimGame.out;
 
 import java.io.PrintStream;
 
-import swimGame.player.Player;
+import swimGame.player.DefaultPlayer;
 
 public class Debug {
 	public static boolean debug = false;
 	private static final String PREFIX = "DBG: ";
 	private static PrintStream out = System.out;
 
-	public static void print(final Player player, boolean prefix,
+	public static void print(final DefaultPlayer player, boolean prefix,
 			final String message) {
 		Debug.print(true, "<" + player + "> " + message);
 	}
 
-	public static void print(final Player player, final String message) {
+	public static void print(final DefaultPlayer player, final String message) {
 		if (!Debug.debug) {
 			return;
 		}
@@ -48,7 +48,7 @@ public class Debug {
 		Debug.out.println(Debug.PREFIX + "[" + callerClass + "] " + message);
 	}
 
-	public static void println(final Player player, final String message) {
+	public static void println(final DefaultPlayer player, final String message) {
 		if (!Debug.debug) {
 			return;
 		}

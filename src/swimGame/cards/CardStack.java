@@ -1,5 +1,6 @@
 package swimGame.cards;
 
+import java.util.Iterator;
 import java.util.Random;
 
 /**
@@ -27,6 +28,10 @@ public class CardStack {
 	public static final int STACKVALUE_MIN = 24; // 7 + 8 + 9
 	// the maximum of the reachable points
 	public static final int STACKVALUE_MAX = 31; // A + B + D
+	// flags for the card-stack array
+	public static final byte FLAG_HAS_CARD = 1;
+	public static final byte FLAG_NO_CARD = 0;
+	public static final byte FLAG_UNINITIALIZED = -1;
 
 	/** Card stack of this table */
 	private byte[][] cardStack = new byte[CardStack.CARDS_MAX_CARD][CardStack.CARDS_MAX_COLOR];
@@ -99,9 +104,9 @@ public class CardStack {
 			// the color
 			card[1] = CardStack.random.nextInt(CardStack.CARDS_MAX_COLOR);
 
-			if (this.cardStack[card[0]][card[1]] == 1) {
-				// card is there
-				this.cardStack[card[0]][card[1]] = 0;
+			if (this.cardStack[card[0]][card[1]] == CardStack.FLAG_HAS_CARD) {
+				// card is there .. take it
+				this.cardStack[card[0]][card[1]] = CardStack.FLAG_NO_CARD;
 				return card;
 			}
 		}
@@ -114,7 +119,7 @@ public class CardStack {
 	 *            The card to add
 	 */
 	public void addCard(final int[] card) {
-		this.cardStack[card[0]][card[1]] = 1;
+		this.cardStack[card[0]][card[1]] = CardStack.FLAG_HAS_CARD;
 		this.empty = false;
 		this.cards++;
 	}
@@ -131,7 +136,7 @@ public class CardStack {
 		for (int card = 0; card < CardStack.CARDS_MAX_CARD; card++) {
 			for (int color = 0; color < CardStack.CARDS_MAX_COLOR; color++) {
 				// check if we own this card
-				if (this.cardStack[card][color] == 1) {
+				if (this.cardStack[card][color] == CardStack.FLAG_HAS_CARD) {
 					cards += this.cardUtils.cardToString(new int[] { card,
 							color });
 				}
@@ -179,7 +184,7 @@ public class CardStack {
 	 *            The card to remove
 	 */
 	public void removeCard(final int[] card) {
-		this.cardStack[card[0]][card[1]] = 0;
+		this.cardStack[card[0]][card[1]] = CardStack.FLAG_NO_CARD;
 	}
 
 	public byte[] getCardsByColor(byte color) throws IllegalArgumentException {
@@ -190,14 +195,15 @@ public class CardStack {
 		}
 
 		// we have three cards max..
-		byte[] cards = new byte[] { -1, -1, -1 };
+		byte[] cards = new byte[] { CardStack.FLAG_UNINITIALIZED,
+				CardStack.FLAG_UNINITIALIZED, CardStack.FLAG_UNINITIALIZED };
 		// ..track them
 		int cardCount = 0;
 
 		// go through cards..
 		for (byte card = 0; card < CardStack.CARDS_MAX_CARD; card++) {
 			// ..to check if we own it..
-			if (this.cardStack[card][color] == 0) {
+			if (this.cardStack[card][color] == CardStack.FLAG_NO_CARD) {
 				// ..no we don't - check next
 				continue;
 			}
@@ -218,14 +224,15 @@ public class CardStack {
 		}
 
 		// we have three cards max..
-		byte[] cards = new byte[] { -1, -1, -1 };
+		byte[] cards = new byte[] { CardStack.FLAG_UNINITIALIZED,
+				CardStack.FLAG_UNINITIALIZED, CardStack.FLAG_UNINITIALIZED };
 		// ..track them
 		int cardCount = 0;
 
 		// go through cards..
 		for (byte color = 0; color < CardStack.CARDS_MAX_COLOR; color++) {
 			// ..to check if we own it..
-			if (this.cardStack[cardType][color] == 0) {
+			if (this.cardStack[cardType][color] == CardStack.FLAG_NO_CARD) {
 				// ..no we don't - check next
 				continue;
 			}
@@ -236,5 +243,64 @@ public class CardStack {
 			}
 		}
 		return cards;
+	}
+
+	/**
+	 * Iterator that steps from top left to bottom right through the stack-array
+	 * 
+	 * @author Jens Bertram <code@jens-bertram.net>
+	 * 
+	 */
+	public class StackIterator implements Iterator<Integer> {
+		int row;
+		int col;
+
+		public StackIterator() {
+			this.row = 0;
+			this.col = 0;
+		}
+
+		@Override
+		public boolean hasNext() {
+			// last row
+			if (this.row == (CardStack.CARDS_MAX_COLOR - 1)) {
+				// before last col?
+				if (this.col < (CardStack.CARDS_MAX_CARD - 1)) {
+					// there are cols left
+					return true;
+				}
+				return false;
+			}
+			return true;
+		}
+
+		@Override
+		public Integer next() throws IllegalStateException {
+			if (this.hasNext()) {
+				if (this.col < (CardStack.CARDS_MAX_CARD - 1)) {
+					this.col++;
+				} else {
+					this.col = 0;
+					this.row++;
+				}
+
+				return Integer
+						.valueOf(CardStack.this.cardStack[this.col][this.row]);
+			}
+			throw new IllegalStateException("You tried to step out of bounds.");
+		}
+
+		@Override
+		public void remove() throws IllegalStateException {
+			throw new IllegalStateException("Operation not supported.");
+		}
+
+		public int getCard() {
+			return this.col;
+		}
+
+		public int getColor() {
+			return this.row;
+		}
 	}
 }

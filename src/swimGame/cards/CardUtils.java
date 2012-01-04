@@ -108,7 +108,7 @@ public class CardUtils {
 	 * Get the string representation for a card
 	 * 
 	 * @param card
-	 *            The card defined by it's array coordinates
+	 *            The card defined by it's array coordinates [card, color]
 	 * @return The string representation of the given card
 	 * @see swimGame.cards.CardUtils#initCardStack
 	 */
