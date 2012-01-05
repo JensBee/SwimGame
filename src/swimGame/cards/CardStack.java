@@ -80,7 +80,7 @@ public class CardStack {
 	}
 
 	/**
-	 * Randomly get a card off of the stack
+	 * Get a random card out of the stack
 	 * 
 	 * @return Byte array representing the card
 	 * @see swimGame.cards.CardUtils#initCardStack
@@ -163,21 +163,6 @@ public class CardStack {
 	}
 
 	/**
-	 * Get the cards of this stack condensed in an linear byte array
-	 * 
-	 * @return
-	 */
-	public byte[] getCards() {
-		byte[] cards = new byte[6];
-		for (int card = 0; card < CardStack.CARDS_MAX_CARD; card++) {
-			for (int color = 0; color < CardStack.CARDS_MAX_COLOR; color++) {
-
-			}
-		}
-		return cards;
-	}
-
-	/**
 	 * Remove a card from this stack
 	 * 
 	 * @param card
@@ -187,6 +172,13 @@ public class CardStack {
 		this.cardStack[card[0]][card[1]] = CardStack.FLAG_NO_CARD;
 	}
 
+	/**
+	 * Get all cards belonging to the given color
+	 * 
+	 * @param color
+	 * @return
+	 * @throws IllegalArgumentException
+	 */
 	public byte[] getCardsByColor(byte color) throws IllegalArgumentException {
 		if ((color < 0) || (color > CardStack.CARDS_MAX_COLOR)) {
 			throw new IllegalArgumentException(String.format(
@@ -216,6 +208,13 @@ public class CardStack {
 		return cards;
 	}
 
+	/**
+	 * Get all cards belonging to the given type
+	 * 
+	 * @param cardType
+	 * @return
+	 * @throws IllegalArgumentException
+	 */
 	public byte[] getCardsByType(byte cardType) throws IllegalArgumentException {
 		if ((cardType < 0) || (cardType > CardStack.CARDS_MAX_CARD)) {
 			throw new IllegalArgumentException(String.format(
@@ -246,6 +245,44 @@ public class CardStack {
 	}
 
 	/**
+	 * Get a column (colors for a type) from the card-stack
+	 * 
+	 * @param cardType
+	 * @return
+	 */
+	public byte[] getColumn(int cardType) {
+		if ((cardType < 0) || (cardType > CardStack.CARDS_MAX_CARD)) {
+			throw new IllegalArgumentException(String.format(
+					"Card type %d out of bounds (%d-%d)", cardType, 0,
+					CardStack.CARDS_MAX_CARD));
+		}
+		byte[] col = new byte[CardStack.CARDS_MAX_COLOR];
+		for (int i = 0; i < CardStack.CARDS_MAX_COLOR; i++) {
+			col[i] = this.cardStack[cardType][i];
+		}
+		return col;
+	}
+
+	/**
+	 * Get a row (types by color) from the card-stack
+	 * 
+	 * @param color
+	 * @return
+	 */
+	public byte[] getRow(int color) {
+		if ((color < 0) || (color > CardStack.CARDS_MAX_COLOR)) {
+			throw new IllegalArgumentException(String.format(
+					"Card color %d out of bounds (%d-%d)", color, 0,
+					CardStack.CARDS_MAX_COLOR));
+		}
+		byte[] row = new byte[CardStack.CARDS_MAX_CARD];
+		for (int i = 0; i < CardStack.CARDS_MAX_CARD; i++) {
+			row[i] = this.cardStack[i][color];
+		}
+		return row;
+	}
+
+	/**
 	 * Iterator that steps from top left to bottom right through the stack-array
 	 * 
 	 * @author Jens Bertram <code@jens-bertram.net>
@@ -257,7 +294,7 @@ public class CardStack {
 
 		public StackIterator() {
 			this.row = 0;
-			this.col = 0;
+			this.col = -1;
 		}
 
 		@Override
@@ -295,10 +332,20 @@ public class CardStack {
 			throw new IllegalStateException("Operation not supported.");
 		}
 
+		/**
+		 * Get the current card type
+		 * 
+		 * @return
+		 */
 		public int getCard() {
 			return this.col;
 		}
 
+		/**
+		 * Get the color of the current card
+		 * 
+		 * @return
+		 */
 		public int getColor() {
 			return this.row;
 		}

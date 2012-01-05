@@ -30,10 +30,10 @@ public interface IPlayer {
 	 * possible signals.
 	 * 
 	 * @param event
-	 *            A byte value indicating the event-type.
+	 *            An int value indicating the event-type.
 	 * @see swimGame.Table
 	 */
-	public void handleTableEvent(final byte event);
+	public void handleTableEvent(final int event);
 
 	/**
 	 * The player has to decide if he want to keep the card set he already
@@ -44,4 +44,6 @@ public interface IPlayer {
 	 * @return False, if we want to retrieve a new set of cards
 	 */
 	public boolean keepCardSet();
+
+	public boolean doMove();
 }

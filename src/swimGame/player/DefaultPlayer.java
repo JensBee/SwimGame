@@ -4,9 +4,15 @@ import swimGame.cards.CardStack;
 import swimGame.cards.CardStack.StackIterator;
 import swimGame.cards.CardUtils;
 import swimGame.out.Debug;
+import swimGame.table.Table;
 
 /**
  * A player playing the game. The default implementation of a player.
+ * 
+ * Basic naming scheme for rating functions:<br/>
+ * All rate(Card|Stack)_* functions return normalized values between 0-10 from
+ * worst to best.<br/>
+ * All calc(Card|Stack)_* function return absolute values.
  * 
  * @author Jens Bertram <code@jens-bertram.net>
  * 
@@ -23,6 +29,25 @@ public class DefaultPlayer extends AbstractPlayer {
 	private static final byte FLAG_CARD_TAKEN = -2;
 	private static final byte FLAG_CARD_DROPPED = -3;
 
+	// rating influencing parameters
+	private static final int INF_SAME_COLOR = 5;
+	private static final int INF_SAME_TYPE = 0;
+
+	// behaviour defaults
+	private static final int STACk_DROP_TRESHOLD = 20;
+
+	// the maximum value a card rating by type may reach
+	private static final int CR_MAX_TYPE = (2 * DefaultPlayer.INF_SAME_TYPE)
+			+ DefaultPlayer.getStackCardValue(CardStack.CARDS_MAX)
+			+ DefaultPlayer.getStackCardValue(CardStack.CARDS_MAX - 1)
+			+ DefaultPlayer.getStackCardValue(CardStack.CARDS_MAX - 2);
+
+	// the maximum value a card rating by color may reach
+	private static final int CR_MAX_COLOR = (2 * DefaultPlayer.INF_SAME_COLOR)
+			+ DefaultPlayer.getStackCardValue(CardStack.CARDS_MAX)
+			+ DefaultPlayer.getStackCardValue(CardStack.CARDS_MAX - 1)
+			+ DefaultPlayer.getStackCardValue(CardStack.CARDS_MAX - 2);
+
 	/** Constructor */
 	public DefaultPlayer() {
 		super();
@@ -33,23 +58,19 @@ public class DefaultPlayer extends AbstractPlayer {
 	 */
 	@Override
 	public boolean keepCardSet() {
-		// this.cards.setCardStack(this.cardStack);
-		byte[] cards = this.rateCards();
-		Debug.println(
-				this,
-				String.format(
-						"Looks like I should drop %s.",
-						this.cardUtils.cardToString(new int[] { cards[6],
-								cards[7] })));
-		try {
-			Debug.println(this,
-					String.format("Stack value is %.1f.", this.getStackValue()));
-		} catch (IllegalStateException e) {
-			// ok, we're not ready yet
-			Debug.println(this,
-					String.format("Whole stack is not dropable yet."));
+		// byte[] cards = this.rateCards();
+
+		Debug.println(this, "Deciding..");
+
+		if (this.calcStack_value() < DefaultPlayer.STACk_DROP_TRESHOLD) {
+			// drop immediately if blow threshold
+			Debug.println(this, String.format(
+					"Dropping (below threshold (%d))",
+					DefaultPlayer.STACk_DROP_TRESHOLD));
+			return false;
 		}
 
+		Debug.println(this, "Keeping cardset");
 		return true;
 	}
 
@@ -92,42 +113,39 @@ public class DefaultPlayer extends AbstractPlayer {
 			Debug.print(this, true, String.format(
 					"Ratings for %s: color(%d) type(%d) value(%d)",
 					this.cardUtils.cardToString(new int[] { sI.getCard(),
-							sI.getColor() }),//
+							sI.getColor() }),
 					this.rateCard_byColor(new int[] { sI.getCard(),
-							sI.getColor() }),//
+							sI.getColor() }),
 					this.rateCard_byType(new int[] { sI.getCard(),
-							sI.getColor() }),//
+							sI.getColor() }),
 					this.rateCard_byValue(new int[] { sI.getCard(),
-							sI.getColor() })//
-					));
+							sI.getColor() })));
 			Debug.print("\n");
 		}
 
+		if (Debug.debug == true) {
+			Debug.println(
+					this,
+					String.format("Goal distance: %d",
+							this.calcStack_goalDistance()));
+
+		}
 		return this.rankCardRating(rating);
 	}
-
-	// rating influencing parameters
-	private final byte INF_SAME_COLOR = 10;
-	private final byte INF_SAME_TYPE = 0;
-
-	// the maximum value a stack rating may reach
-	private final int cardStackMaxRating = (2 * this.INF_SAME_TYPE)
-			+ this.getStackCardValue(CardStack.CARDS_MAX)
-			+ this.getStackCardValue(CardStack.CARDS_MAX - 1)
-			+ this.getStackCardValue(CardStack.CARDS_MAX - 2);
 
 	protected int normalizeRating(double max, double value) {
 		return new Double(((value - 0) / (max - 0)) * 10).intValue();
 	}
 
 	/**
-	 * Calculates the value of a card belonging to a stack
+	 * Calculates the value of a card belonging to a stack. To get the real
+	 * values add 7 to the retrieved value
 	 * 
 	 * @param card
 	 *            The number representing the card in the stack
 	 * @return The card value
 	 */
-	protected int getStackCardValue(int card) {
+	private static int getStackCardValue(int card) {
 		// normalize card values
 		if (card > 2) {
 			// B, D, K -> 3; A -> 4
@@ -138,7 +156,7 @@ public class DefaultPlayer extends AbstractPlayer {
 		}
 	}
 
-	protected double getStackValue() throws IllegalStateException {
+	private double getStackValue() throws IllegalStateException {
 		int count = 0;
 		double value = 0;
 		for (byte color = 0; color < (CardStack.CARDS_MAX_COLOR); color++) {
@@ -148,14 +166,9 @@ public class DefaultPlayer extends AbstractPlayer {
 					continue;
 				}
 				count++;
-				value = value + this.getStackCardValue(card) + 7;
+				value = value + DefaultPlayer.getStackCardValue(card) + 7;
 			}
 			if (count > 0) {
-				// Debug.println(
-				// this.getClass(),
-				// "Color:" + color + " cards:" + count + " value:"
-				// + value + " norm:"
-				// + this.normalizeRating(31, value));
 				if (count == 3) {
 					// return the max, if we reached it
 					if (value == 31) {
@@ -174,14 +187,9 @@ public class DefaultPlayer extends AbstractPlayer {
 					continue;
 				}
 				count++;
-				value = value + this.getStackCardValue(card) + 7;
+				value = value + DefaultPlayer.getStackCardValue(card) + 7;
 			}
 			if (count > 0) {
-				// Debug.println(
-				// this.getClass(),
-				// "Card:" + cardType + " cards:" + count + " value:"
-				// + value + " norm:"
-				// + this.normalizeRating(30.5, value));
 				if (count == 3) {
 					// return the max, if we reached it
 					return 30.5;
@@ -198,7 +206,7 @@ public class DefaultPlayer extends AbstractPlayer {
 	 * Rate a card based on other cards of the same color
 	 * 
 	 * @param aCard
-	 * @return
+	 * @return The normalized rating value
 	 */
 	private int rateCard_byColor(int[] aCard) {
 		// the rating for this card
@@ -209,27 +217,27 @@ public class DefaultPlayer extends AbstractPlayer {
 		// go through cards by same color
 		for (int card = 0; card < CardStack.CARDS_MAX_CARD; card++) {
 			// ..to check if we own it..
-			if (this.cardStack.getArray()[card][aCard[1]] == 0) {
+			if (this.cardStack.getArray()[card][aCard[1]] == CardStack.FLAG_NO_CARD) {
 				// ..no we don't - check next
 				continue;
 			}
 			same++;
-			cardValue = cardValue + this.getStackCardValue(card);
+			cardValue = cardValue + DefaultPlayer.getStackCardValue(card);
 
 			// modify rating if there are more cards of this color
 			if (same > 1) {
-				cardValue = cardValue + this.INF_SAME_COLOR;
+				cardValue = cardValue + DefaultPlayer.INF_SAME_COLOR;
 			}
 		}
 
-		return this.normalizeRating(this.cardStackMaxRating, cardValue);
+		return this.normalizeRating(DefaultPlayer.CR_MAX_COLOR, cardValue);
 	}
 
 	/**
 	 * Rate a card based on it's type and cards of the same type
 	 * 
 	 * @param aCard
-	 * @return
+	 * @return The normalized rating value
 	 */
 	private int rateCard_byType(int[] aCard) {
 		// the rating for this card
@@ -240,20 +248,20 @@ public class DefaultPlayer extends AbstractPlayer {
 		// go through cards by same type
 		for (int color = 0; color < (CardStack.CARDS_MAX_COLOR); color++) {
 			// ..to check if we own it..
-			if (this.cardStack.getArray()[aCard[0]][color] == 0) {
+			if (this.cardStack.getArray()[aCard[0]][color] == CardStack.FLAG_NO_CARD) {
 				// ..no we don't - check next
 				continue;
 			}
 			same++;
-			cardValue = cardValue + this.getStackCardValue(aCard[0]);
+			cardValue = cardValue + DefaultPlayer.getStackCardValue(aCard[0]);
 
 			// modify rating if there are more cards of this type
 			if (same > 1) {
-				cardValue = cardValue + this.INF_SAME_TYPE;
+				cardValue = cardValue + DefaultPlayer.INF_SAME_TYPE;
 			}
 		}
 
-		return this.normalizeRating(this.cardStackMaxRating, cardValue);
+		return this.normalizeRating(DefaultPlayer.CR_MAX_TYPE, cardValue);
 	}
 
 	/**
@@ -261,9 +269,9 @@ public class DefaultPlayer extends AbstractPlayer {
 	 * 
 	 * @param card
 	 *            int[card][color]
-	 * @return
+	 * @return The normalized rating value
 	 */
-	protected int rateCard_byValue(int[] aCard) {
+	private int rateCard_byValue(int[] aCard) {
 		// the rating for this card
 		int cardValue = 0;
 		// store occourances [card, color]
@@ -272,45 +280,129 @@ public class DefaultPlayer extends AbstractPlayer {
 		// go through cards by same type
 		for (int color = 0; color < (CardStack.CARDS_MAX_COLOR); color++) {
 			// ..to check if we own it..
-			if (this.cardStack.getArray()[aCard[0]][color] == 0) {
+			if (this.cardStack.getArray()[aCard[0]][color] == CardStack.FLAG_NO_CARD) {
 				// ..no we don't - check next
 				continue;
 			}
 			same[0] = same[0]++;
-			cardValue = cardValue + this.getStackCardValue(aCard[0]);
+			cardValue = cardValue + DefaultPlayer.getStackCardValue(aCard[0]);
 
 			// modify rating if there are more cards of this type
 			if (same[0] > 1) {
-				cardValue = cardValue + this.INF_SAME_TYPE;
+				cardValue = cardValue + DefaultPlayer.INF_SAME_TYPE;
 			}
 		}
 
 		// go through cards by same color
 		for (int card = 0; card < CardStack.CARDS_MAX_CARD; card++) {
 			// ..to check if we own it..
-			if (this.cardStack.getArray()[card][aCard[1]] == 0) {
+			if (this.cardStack.getArray()[card][aCard[1]] == CardStack.FLAG_NO_CARD) {
 				// ..no we don't - check next
 				continue;
 			}
 			same[1] = same[1]++;
-			cardValue = cardValue + this.getStackCardValue(card);
+			cardValue = cardValue + DefaultPlayer.getStackCardValue(card);
 
 			// modify rating if there are more cards of this color
 			if (same[1] > 1) {
-				cardValue = cardValue + this.INF_SAME_COLOR;
+				cardValue = cardValue + DefaultPlayer.INF_SAME_COLOR;
 			}
 		}
 
-		return this.normalizeRating(this.cardStackMaxRating, cardValue);
+		return this.normalizeRating(DefaultPlayer.CR_MAX_TYPE, cardValue);
 	}
 
 	/**
-	 * Check, how many cards are missing to reach a goal state
+	 * Check, how many cards are missing to reach a goal state. No calculation
+	 * of values is involved here
 	 * 
-	 * @return
+	 * @return How many cards are missing to reach a goal state
 	 */
-	private int rateStack_goalDistance() {
-		return 0;
+	private int calcStack_goalDistance() {
+		int pair = 0;
+		StackIterator sI = this.cardStack.new StackIterator();
+		while (sI.hasNext()) {
+			int nearBy = 0;
+			// skip if we don't own this card
+			if (sI.next() == CardStack.FLAG_NO_CARD) {
+				continue;
+			}
+			// do we have another card in this row?
+			for (byte b : this.cardStack.getRow(sI.getColor())) {
+				if (b == CardStack.FLAG_HAS_CARD) {
+					nearBy++;
+				}
+			}
+			// do we have another card in this col?
+			for (byte b : this.cardStack.getColumn(sI.getCard())) {
+				if (b == CardStack.FLAG_HAS_CARD) {
+					nearBy++;
+				}
+			}
+			pair = (nearBy > pair) ? nearBy : pair;
+		}
+		return (6 - pair) / 2; // 6 -> 3 cards = 3*color + 3*type
+	}
+
+	/**
+	 * Returns the current value of the stack
+	 * 
+	 * @return The absolute value
+	 */
+	private double calcStack_value() {
+		StackIterator sI = this.cardStack.new StackIterator();
+		double value = 0;
+		while (sI.hasNext()) {
+			int sameType = 0;
+			double currentValue = 0;
+			// skip if we don't own this card
+			if (sI.next() == CardStack.FLAG_NO_CARD) {
+				continue;
+			}
+
+			// do we have the same card with another color?
+			for (byte b : this.cardStack.getColumn(sI.getCard())) {
+				if (b == CardStack.FLAG_HAS_CARD) {
+					sameType++;
+				}
+			}
+
+			// same type in three colors is fixed value
+			if (sameType == 3) {
+				value = Table.PNT_THREE_OF_SAME_TYPE;
+				break;
+			} else if (sameType == 2) {
+				// we only missing one card of our type
+				// TODO: better decide on players "model" if he want's to take
+				// this route
+				Debug.println("--> shortening decision [FIXME!]");
+				value = (Table.PNT_THREE_OF_SAME_TYPE / 3) * 2;
+				break;
+			}
+
+			// do we have another card in this row/of the same type?
+			byte[] row = this.cardStack.getRow(sI.getColor());
+			for (int i = 0; i < CardStack.CARDS_MAX_CARD; i++) {
+				byte b = row[i];
+				if (b == CardStack.FLAG_HAS_CARD) {
+					// calculate the real value here
+					currentValue = currentValue
+							+ DefaultPlayer.getStackCardValue(i) + 7;
+				}
+			}
+			value = (currentValue > value) ? currentValue : value;
+		}
+
+		if (Debug.debug == true) {
+			double dMin = CardStack.STACKVALUE_MIN - value;
+			double dMax = CardStack.STACKVALUE_MAX - value;
+			Debug.println(
+					this,
+					String.format(
+							"Stack value: abs(%s) dMax(+%.1f) dMin(-%.1f) dMinMax(%.1f)",
+							Double.toString(value), dMax, dMin, dMax - dMin));
+		}
+		return value;
 	}
 
 	/**
@@ -388,5 +480,16 @@ public class DefaultPlayer extends AbstractPlayer {
 						rating[0], rating[1], rating[2] };
 			}
 		}
+	}
+
+	@Override
+	public boolean doMove() {
+		Debug.println(this, "MOVE!");
+		return true;
+	}
+
+	@Override
+	public void handleTableEvent(int event) {
+
 	}
 }
