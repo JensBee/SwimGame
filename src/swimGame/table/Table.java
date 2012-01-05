@@ -12,10 +12,9 @@ public class Table {
 	private boolean tableClosed = false;
 	/** Card stack owned by this table (stack will be full, i.e. has all cards) */
 	private final CardStack cardStack = new CardStack(true);
+	private final CardStack cardStackTable = new CardStack(true);
 	// name for console out
 	public static final String CNAME = "Table";
-	// the current player
-	// private int currentPlayer = 0;
 	// the current round
 	private int currentRound = 1;
 	// the players
@@ -27,34 +26,17 @@ public class Table {
 	// points for three cards of same type, but different color
 	public static final double PNT_THREE_OF_SAME_TYPE = 30.5;
 
-	// the game is about to start
-	public static final byte EVENT_GAME_START = 0;
-	// three cards got dropped by the starting player
-	public static final byte EVENT_CARDS_DROPPED = 1;
-	// a card was dropped by a player
-	public static final byte EVENT_CARD_DROPPED = 2;
-	// next player is about to play
-	public static final byte EVENT_NEXT_PLAYER = 3;
-	// next round is about to start
-	public static final byte EVENT_NEXT_ROUND = 4;
-
-	enum Event {
-		TABLE_CLOSED(0),
+	public enum Event {
+		TABLE_CLOSED,
 		// Data: null
-		GAME_START(1),
+		GAME_START,
 		// Data: null
-		INITIAL_CARDS_DROPPED(2)
+		INITIAL_CARDS_DROPPED
 		// Data: int[6] array with three cards 3*(card,color)
 		;
-
-		public final int id;
-
-		Event(int id) {
-			this.id = id;
-		}
 	}
 
-	private class PlayerIterator implements Iterator {
+	private class PlayerIterator implements Iterator<IPlayer> {
 		private int pointer = -1;
 
 		@Override
@@ -62,10 +44,6 @@ public class Table {
 			if ((this.pointer + 1) < Table.this.players.size()) {
 				return true;
 			}
-			// if (Table.this.gameFinished == false) {
-			// this.pointer = -1;
-			// return true;
-			// }
 			return false;
 		}
 
@@ -74,7 +52,8 @@ public class Table {
 			if (this.hasNext()) {
 				this.pointer++;
 				IPlayer player = Table.this.players.get(this.pointer);
-				Console.println(Table.CNAME, "It's your turn " + player);
+				Console.println(Table.CNAME,
+						String.format("It's your turn %s", player));
 				return player;
 			}
 			return null;
@@ -107,8 +86,8 @@ public class Table {
 		}
 
 		this.players.add(player);
-		Console.println(Table.CNAME, '"' + player.toString()
-				+ "\" joined the table");
+		Console.println(Table.CNAME,
+				String.format("\"%s\" joined the table", player.toString()));
 	}
 
 	/**
@@ -136,8 +115,9 @@ public class Table {
 				playerNames += p.toString() + ", ";
 			}
 			Console.println(Table.CNAME, "*** Table closed ***");
-			Console.println(Table.CNAME, "Players (in order) are: "
-					+ playerNames.subSequence(0, playerNames.length() - 2));
+			Console.println(Table.CNAME, String.format(
+					"Players (in order) are: %s",
+					playerNames.subSequence(0, playerNames.length() - 2)));
 		}
 	}
 
@@ -181,7 +161,8 @@ public class Table {
 	 */
 	private void nextRound() {
 		this.currentRound++;
-		Console.println(Table.CNAME, "-- Round " + this.currentRound + " --");
+		Console.println(Table.CNAME,
+				String.format("*** Round %d ***", this.currentRound));
 	}
 
 	private void runGame() {
@@ -195,7 +176,7 @@ public class Table {
 			this.playerIt.reset();
 
 			// TODO remove testing restriction
-			if (this.currentRound == 3) {
+			if (this.currentRound == 1) {
 				this.gameFinished = true;
 			}
 		}
@@ -220,25 +201,39 @@ public class Table {
 			}
 		}
 
-		Console.println(Table.CNAME, this.players.get(this.playerIt.getId())
-				+ " begins!");
+		Console.println(
+				Table.CNAME,
+				String.format("%s begins!",
+						this.players.get(this.playerIt.getId())));
 
 		// deal out a second set of cards for the first player, if he want so
 		if (firstPlayer.keepCardSet() == false) {
-			Console.println(Table.CNAME, firstPlayer
-					+ " drops the initial card-set: "
-					+ new CardStack(firstCards).toString());
+			// player is about to drop his cards - make them public
+			Console.println(Table.CNAME, String.format(
+					"%s drops the initial card-set: %s", firstPlayer,
+					new CardStack(firstCards).toString()));
 			this.fireEvent(Event.INITIAL_CARDS_DROPPED, firstCards);
-			Console.println(Table.CNAME, "Dealing out a second cardset for "
-					+ firstPlayer + "..");
+
+			// update cards on table
+			this.cardStackTable.addCards(firstCards);
+
+			// deal out second cardset
+			Console.println(Table.CNAME, String.format(
+					"Dealing out a second cardset for %s..", firstPlayer));
 			firstPlayer.setCards(this.getPlayerCardSet());
+		} else {
+			// player took first cards - make seconds public
+			int cards[] = this.getPlayerCardSet();
+			this.fireEvent(Event.INITIAL_CARDS_DROPPED, cards);
+			// update cards on table
+			this.cardStackTable.addCards(firstCards);
 		}
 		this.runGame();
 	}
 
 	private void fireEvent(Event event, Object data) {
 		for (IPlayer p : this.players.getList()) {
-			p.handleTableEvent(event.id);
+			p.handleTableEvent(event, data);
 		}
 	}
 }

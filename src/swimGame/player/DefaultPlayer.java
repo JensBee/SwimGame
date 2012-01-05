@@ -2,7 +2,6 @@ package swimGame.player;
 
 import swimGame.cards.CardStack;
 import swimGame.cards.CardStack.StackIterator;
-import swimGame.cards.CardUtils;
 import swimGame.out.Debug;
 import swimGame.table.Table;
 
@@ -18,12 +17,14 @@ import swimGame.table.Table;
  * 
  */
 public class DefaultPlayer extends AbstractPlayer {
-	private final CardUtils cardUtils = new CardUtils();
 	/**
 	 * The following variables (self.*) define the players character, Their
 	 * values values range between low:1 and high:9
 	 */
 	private final byte selfRiskyness = 9;
+
+	/** Cards owned by the table */
+	protected CardStack cardStackTable;
 
 	// additional flags for the stack-array
 	private static final byte FLAG_CARD_TAKEN = -2;
@@ -51,6 +52,7 @@ public class DefaultPlayer extends AbstractPlayer {
 	/** Constructor */
 	public DefaultPlayer() {
 		super();
+		this.cardStackTable = new CardStack();
 	}
 
 	/**
@@ -71,15 +73,6 @@ public class DefaultPlayer extends AbstractPlayer {
 		}
 
 		Debug.println(this, "Keeping cardset");
-		return true;
-	}
-
-	/**
-	 * Check if the cards we own can be used to end the game
-	 * 
-	 * @return True if we can drop
-	 */
-	private boolean cardsDropable() {
 		return true;
 	}
 
@@ -112,7 +105,7 @@ public class DefaultPlayer extends AbstractPlayer {
 
 			Debug.print(this, true, String.format(
 					"Ratings for %s: color(%d) type(%d) value(%d)",
-					this.cardUtils.cardToString(new int[] { sI.getCard(),
+					CardStack.cardToString(new int[] { sI.getCard(),
 							sI.getColor() }),
 					this.rateCard_byColor(new int[] { sI.getCard(),
 							sI.getColor() }),
@@ -484,12 +477,18 @@ public class DefaultPlayer extends AbstractPlayer {
 
 	@Override
 	public boolean doMove() {
-		Debug.println(this, "MOVE!");
+		Debug.println(this, "My stack: " + this.cardStack.toString());
+		Debug.println(this, "Table stack: " + this.cardStackTable.toString());
+		this.rateCards();
 		return true;
 	}
 
 	@Override
-	public void handleTableEvent(int event) {
-
+	public void handleTableEvent(Table.Event event, Object data) {
+		switch (event) {
+		case INITIAL_CARDS_DROPPED:
+			this.cardStackTable.addCards((int[]) data);
+			break;
+		}
 	}
 }

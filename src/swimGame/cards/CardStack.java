@@ -11,12 +11,8 @@ import java.util.Random;
  * 
  */
 public class CardStack {
-	// Card handling helpers
-	private final CardUtils cardUtils = new CardUtils();
 	// one random number generator for all stacks should be enough
 	private static Random random = null;
-	// track the number of cards in this stack
-	private int cards = 0;
 	// is this an empty stack?8
 	private boolean empty = true;
 
@@ -32,6 +28,41 @@ public class CardStack {
 	public static final byte FLAG_HAS_CARD = 1;
 	public static final byte FLAG_NO_CARD = 0;
 	public static final byte FLAG_UNINITIALIZED = -1;
+
+	// Card names for pretty printing
+	private static final char SYM_DIAMOND = '♦';
+	private static final char SYM_HEART = '♥';
+	private static final char SYM_SPADE = '♠';
+	private static final char SYM_CLUB = '♣';
+	private static final String NAME_JACK = "J";
+	private static final String NAME_QUEEN = "Q";
+	private static final String NAME_KING = "K";
+	private static final String NAME_ACE = "A";
+	private static final String[][] cardStackStr = { //
+			{ CardStack.SYM_DIAMOND + "7", CardStack.SYM_DIAMOND + "8",
+					CardStack.SYM_DIAMOND + "9", CardStack.SYM_DIAMOND + "10",
+					CardStack.SYM_DIAMOND + CardStack.NAME_JACK,
+					CardStack.SYM_DIAMOND + CardStack.NAME_QUEEN,
+					CardStack.SYM_DIAMOND + CardStack.NAME_KING,
+					CardStack.SYM_DIAMOND + CardStack.NAME_ACE },
+			{ CardStack.SYM_HEART + "7", CardStack.SYM_HEART + "8",
+					CardStack.SYM_HEART + "9", CardStack.SYM_HEART + "10",
+					CardStack.SYM_HEART + CardStack.NAME_JACK,
+					CardStack.SYM_HEART + CardStack.NAME_QUEEN,
+					CardStack.SYM_HEART + CardStack.NAME_KING,
+					CardStack.SYM_HEART + CardStack.NAME_ACE },
+			{ CardStack.SYM_SPADE + "7", CardStack.SYM_SPADE + "8",
+					CardStack.SYM_SPADE + "9", CardStack.SYM_SPADE + "10",
+					CardStack.SYM_SPADE + CardStack.NAME_JACK,
+					CardStack.SYM_SPADE + CardStack.NAME_QUEEN,
+					CardStack.SYM_SPADE + CardStack.NAME_KING,
+					CardStack.SYM_SPADE + CardStack.NAME_ACE },
+			{ CardStack.SYM_CLUB + "7", CardStack.SYM_CLUB + "8",
+					CardStack.SYM_CLUB + "9", CardStack.SYM_CLUB + "10",
+					CardStack.SYM_CLUB + CardStack.NAME_JACK,
+					CardStack.SYM_CLUB + CardStack.NAME_QUEEN,
+					CardStack.SYM_CLUB + CardStack.NAME_KING,
+					CardStack.SYM_CLUB + CardStack.NAME_ACE } };
 
 	/** Card stack of this table */
 	private byte[][] cardStack = new byte[CardStack.CARDS_MAX_CARD][CardStack.CARDS_MAX_COLOR];
@@ -52,8 +83,7 @@ public class CardStack {
 	public CardStack(final boolean filled) {
 		if (filled == true) {
 			// The card stack will be initially full
-			this.cardStack = this.cardUtils.getStack(true);
-			this.cards = CardStack.CARDS_MAX;
+			this.cardStack = CardStack.getNewStack(true);
 			this.empty = false;
 		}
 	}
@@ -75,8 +105,19 @@ public class CardStack {
 			this.addCard(new int[] { initialCards[i], initialCards[i + 1] });
 			i = i + 2;
 		}
-		this.cards = 3;
 		this.empty = false;
+	}
+
+	/**
+	 * Get the string representation for a card
+	 * 
+	 * @param card
+	 *            The card defined by it's array coordinates [card, color]
+	 * @return The string representation of the given card
+	 * @see swimGame.cards.CardUtils#initCardStack
+	 */
+	public static String cardToString(final int[] card) {
+		return "[" + CardStack.cardStackStr[card[0]][card[1]] + "]";
 	}
 
 	/**
@@ -93,7 +134,7 @@ public class CardStack {
 		if (CardStack.random == null) {
 			CardStack.random = new Random();
 		}
-		final boolean gotCard = false;
+		// final boolean gotCard = false;
 		final int[] card = new int[2];
 
 		// try to find a random card that's still on the stack
@@ -121,7 +162,6 @@ public class CardStack {
 	public void addCard(final int[] card) {
 		this.cardStack[card[0]][card[1]] = CardStack.FLAG_HAS_CARD;
 		this.empty = false;
-		this.cards++;
 	}
 
 	/**
@@ -137,12 +177,64 @@ public class CardStack {
 			for (int color = 0; color < CardStack.CARDS_MAX_COLOR; color++) {
 				// check if we own this card
 				if (this.cardStack[card][color] == CardStack.FLAG_HAS_CARD) {
-					cards += this.cardUtils.cardToString(new int[] { card,
-							color });
+					cards += CardStack.cardToString(new int[] { card, color });
 				}
 			}
 		}
 		return cards;
+	}
+
+	/**
+	 * Build a card stack
+	 * 
+	 * The card stack array will look like this:
+	 * 
+	 * <pre>
+	 *   7 8 9 10 B D K A 
+	 * ♦ . . . .  . . . .
+	 * ♥ . . . .  . . . . 
+	 * ♠ . . . .  . . . . 
+	 * ♣ . . . .  . . . .
+	 * </pre>
+	 * 
+	 * To win a game basically a right aligned horizontal line or a right
+	 * aligned vertical line is what we want.
+	 */
+	private static byte[][] initCardStack(final byte[][] cardStack) {
+		// fill the card-stack
+		for (int card = 0; card < 8; card++) {
+			for (int color = 0; color < 4; color++) {
+				// build the stack byte array
+				cardStack[card][color] = 1;
+			}
+		}
+		return cardStack;
+	}
+
+	/**
+	 * Get a full card stack
+	 * 
+	 * @param full
+	 * @return
+	 */
+	public static byte[][] getNewStack(final boolean full) {
+		byte[][] cardStack = new byte[8][4];
+		if (full) {
+			cardStack = CardStack.initCardStack(cardStack);
+		}
+		return cardStack;
+	}
+
+	public static String getAsString(int[] cards) {
+		// if ((cards.length % 2) != 0) {
+		// throw new IllegalArgumentException(
+		// "The array you specified is not a sequence of touples.");
+		// }
+		// for (int i = 0; i < cards.length; i++) {
+		// this.addCard(new int[] { cards[i], cards[i + 1] });
+		// i = i + 1;
+		// }
+		return null;
 	}
 
 	/**
@@ -348,6 +440,22 @@ public class CardStack {
 		 */
 		public int getColor() {
 			return this.row;
+		}
+	}
+
+	/**
+	 * Add cards from an integer sequence [(card,color),..]
+	 * 
+	 * @param data
+	 */
+	public void addCards(int[] data) throws IllegalArgumentException {
+		if ((data.length % 2) != 0) {
+			throw new IllegalArgumentException(
+					"The array you specified is not a sequence of touples.");
+		}
+		for (int i = 0; i < data.length; i++) {
+			this.addCard(new int[] { data[i], data[i + 1] });
+			i = i + 1;
 		}
 	}
 }

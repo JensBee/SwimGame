@@ -115,14 +115,4 @@ public abstract class AbstractPlayer implements IPlayer {
 	public boolean keepCardSet() {
 		return true;
 	}
-
-	/**
-	 * An event was emitted from the game table
-	 * 
-	 * @param event
-	 *            The event as defined by Table
-	 * @see swimGame.Table
-	 */
-	@Override
-	public abstract void handleTableEvent(final int event);
 }

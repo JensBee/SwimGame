@@ -41,7 +41,7 @@ public class Debug {
 		Debug.out.println(Debug.PREFIX + message);
 	}
 
-	public static void println(final Class callerClass, final String message) {
+	public static void println(final Class<?> callerClass, final String message) {
 		if (!Debug.debug) {
 			return;
 		}

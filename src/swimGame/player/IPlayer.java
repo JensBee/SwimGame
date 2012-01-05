@@ -1,5 +1,7 @@
 package swimGame.player;
 
+import swimGame.table.Table;
+
 /**
  * Interface for a player to be able to join the game. A Player model can be
  * derived from the AbstractPlayer class.
@@ -31,9 +33,12 @@ public interface IPlayer {
 	 * 
 	 * @param event
 	 *            An int value indicating the event-type.
+	 * @param data
+	 *            Data associated with this event (see swimGame.Table#Event)
 	 * @see swimGame.Table
+	 * @see swimGame.Table#Event
 	 */
-	public void handleTableEvent(final int event);
+	public void handleTableEvent(final Table.Event event, Object data);
 
 	/**
 	 * The player has to decide if he want to keep the card set he already
