@@ -18,7 +18,7 @@ public class Debug {
 		if (!Debug.debug) {
 			return;
 		}
-		Debug.print("<" + player + "> " + message);
+		Debug.print(true, "<" + player + "> " + message);
 	}
 
 	public static void print(boolean prefix, final String message) {

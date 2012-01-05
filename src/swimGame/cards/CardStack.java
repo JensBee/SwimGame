@@ -39,30 +39,30 @@ public class CardStack {
 	private static final String NAME_KING = "K";
 	private static final String NAME_ACE = "A";
 	private static final String[][] cardStackStr = { //
-			{ CardStack.SYM_DIAMOND + "7", CardStack.SYM_DIAMOND + "8",
-					CardStack.SYM_DIAMOND + "9", CardStack.SYM_DIAMOND + "10",
-					CardStack.SYM_DIAMOND + CardStack.NAME_JACK,
-					CardStack.SYM_DIAMOND + CardStack.NAME_QUEEN,
-					CardStack.SYM_DIAMOND + CardStack.NAME_KING,
-					CardStack.SYM_DIAMOND + CardStack.NAME_ACE },
-			{ CardStack.SYM_HEART + "7", CardStack.SYM_HEART + "8",
-					CardStack.SYM_HEART + "9", CardStack.SYM_HEART + "10",
+			{ CardStack.SYM_DIAMOND + "7", CardStack.SYM_HEART + "7",
+					CardStack.SYM_SPADE + "7", CardStack.SYM_CLUB + "7" },
+			{ CardStack.SYM_DIAMOND + "8", CardStack.SYM_HEART + "8",
+					CardStack.SYM_SPADE + "8", CardStack.SYM_CLUB + "8" },
+			{ CardStack.SYM_DIAMOND + "9", CardStack.SYM_HEART + "9",
+					CardStack.SYM_SPADE + "9", CardStack.SYM_CLUB + "9" },
+			{ CardStack.SYM_DIAMOND + "10", CardStack.SYM_HEART + "10",
+					CardStack.SYM_SPADE + "10", CardStack.SYM_CLUB + "10" },
+			{ CardStack.SYM_DIAMOND + CardStack.NAME_JACK,
 					CardStack.SYM_HEART + CardStack.NAME_JACK,
-					CardStack.SYM_HEART + CardStack.NAME_QUEEN,
-					CardStack.SYM_HEART + CardStack.NAME_KING,
-					CardStack.SYM_HEART + CardStack.NAME_ACE },
-			{ CardStack.SYM_SPADE + "7", CardStack.SYM_SPADE + "8",
-					CardStack.SYM_SPADE + "9", CardStack.SYM_SPADE + "10",
 					CardStack.SYM_SPADE + CardStack.NAME_JACK,
+					CardStack.SYM_CLUB + CardStack.NAME_JACK },
+			{ CardStack.SYM_DIAMOND + CardStack.NAME_QUEEN,
+					CardStack.SYM_HEART + CardStack.NAME_QUEEN,
 					CardStack.SYM_SPADE + CardStack.NAME_QUEEN,
+					CardStack.SYM_CLUB + CardStack.NAME_QUEEN },
+			{ CardStack.SYM_DIAMOND + CardStack.NAME_KING,
+					CardStack.SYM_HEART + CardStack.NAME_KING,
 					CardStack.SYM_SPADE + CardStack.NAME_KING,
-					CardStack.SYM_SPADE + CardStack.NAME_ACE },
-			{ CardStack.SYM_CLUB + "7", CardStack.SYM_CLUB + "8",
-					CardStack.SYM_CLUB + "9", CardStack.SYM_CLUB + "10",
-					CardStack.SYM_CLUB + CardStack.NAME_JACK,
-					CardStack.SYM_CLUB + CardStack.NAME_QUEEN,
-					CardStack.SYM_CLUB + CardStack.NAME_KING,
-					CardStack.SYM_CLUB + CardStack.NAME_ACE } };
+					CardStack.SYM_CLUB + CardStack.NAME_KING },
+			{ CardStack.SYM_DIAMOND + CardStack.NAME_ACE,
+					CardStack.SYM_HEART + CardStack.NAME_ACE,
+					CardStack.SYM_SPADE + CardStack.NAME_ACE,
+					CardStack.SYM_CLUB + CardStack.NAME_ACE }, };
 
 	/** Card stack of this table */
 	private byte[][] cardStack = new byte[CardStack.CARDS_MAX_CARD][CardStack.CARDS_MAX_COLOR];
@@ -403,6 +403,18 @@ public class CardStack {
 			return true;
 		}
 
+		public boolean hasNextRow() {
+			int oldCol = this.col;
+			// move col pointer temporary to the end
+			this.col = CardStack.CARDS_MAX_CARD - 1;
+			// check if there's something next
+			boolean hasNext = this.hasNext();
+			// undo changes
+			this.col = oldCol;
+
+			return hasNext;
+		}
+
 		@Override
 		public Integer next() throws IllegalStateException {
 			if (this.hasNext()) {
@@ -417,6 +429,17 @@ public class CardStack {
 						.valueOf(CardStack.this.cardStack[this.col][this.row]);
 			}
 			throw new IllegalStateException("You tried to step out of bounds.");
+		}
+
+		/**
+		 * Get the first element of the next row
+		 * 
+		 * @return
+		 * @throws IllegalStateException
+		 */
+		public Integer nextRow() throws IllegalStateException {
+			this.col = CardStack.CARDS_MAX_CARD - 1;
+			return this.next();
 		}
 
 		@Override
@@ -457,5 +480,47 @@ public class CardStack {
 			this.addCard(new int[] { data[i], data[i + 1] });
 			i = i + 1;
 		}
+	}
+
+	/**
+	 * Sets a custom value instead of the predefined flags for a card
+	 */
+	public void setCardValue(int[] aCard, byte value) {
+		this.cardStack[aCard[0]][aCard[1]] = value;
+	}
+
+	public StringBuffer dumpStack() {
+		StringBuffer dumpStr = new StringBuffer();
+
+		String separator = "\n-+----+----+----+----+----+----+----+----+";
+		String content = "\n%s|%+4d|%+4d|%+4d|%+4d|%+4d|%+4d|%+4d|%+4d|";
+
+		dumpStr.append(String.format(
+				" |   7|   8|   9|  10|   %s|   %s|   %s|   %s|",
+				CardStack.NAME_JACK, CardStack.NAME_QUEEN, CardStack.NAME_KING,
+				CardStack.NAME_ACE));
+		dumpStr.append(separator);
+		dumpStr.append(String.format(content, CardStack.SYM_DIAMOND,
+				this.cardStack[1][0], this.cardStack[1][0],
+				this.cardStack[2][0], this.cardStack[3][0],
+				this.cardStack[4][0], this.cardStack[5][0],
+				this.cardStack[6][0], this.cardStack[7][0]));
+		dumpStr.append(String.format(content, CardStack.SYM_HEART,
+				this.cardStack[1][1], this.cardStack[1][1],
+				this.cardStack[2][1], this.cardStack[3][1],
+				this.cardStack[4][1], this.cardStack[5][1],
+				this.cardStack[6][1], this.cardStack[7][1]));
+		dumpStr.append(String.format(content, CardStack.SYM_SPADE,
+				this.cardStack[1][2], this.cardStack[1][2],
+				this.cardStack[2][2], this.cardStack[3][2],
+				this.cardStack[4][2], this.cardStack[5][2],
+				this.cardStack[6][2], this.cardStack[7][2]));
+		dumpStr.append(String.format(content, CardStack.SYM_CLUB,
+				this.cardStack[1][3], this.cardStack[1][3],
+				this.cardStack[2][3], this.cardStack[3][3],
+				this.cardStack[4][3], this.cardStack[5][3],
+				this.cardStack[6][3], this.cardStack[7][3]));
+		dumpStr.append(separator);
+		return dumpStr;
 	}
 }

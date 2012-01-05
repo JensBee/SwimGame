@@ -12,7 +12,8 @@ public class Table {
 	private boolean tableClosed = false;
 	/** Card stack owned by this table (stack will be full, i.e. has all cards) */
 	private final CardStack cardStack = new CardStack(true);
-	private final CardStack cardStackTable = new CardStack(true);
+	// cards on the table
+	private final CardStack cardStackTable = new CardStack(false);
 	// name for console out
 	public static final String CNAME = "Table";
 	// the current round
@@ -171,6 +172,8 @@ public class Table {
 			this.nextRound();
 
 			while (this.playerIt.hasNext()) {
+				Console.println(Table.CNAME,
+						"Cards: " + this.cardStackTable.toString());
 				this.playerIt.next().doMove();
 			}
 			this.playerIt.reset();

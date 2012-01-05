@@ -17,18 +17,20 @@ import swimGame.table.Table;
  * 
  */
 public class DefaultPlayer extends AbstractPlayer {
-	/**
-	 * The following variables (self.*) define the players character, Their
-	 * values values range between low:1 and high:9
-	 */
-	private final byte selfRiskyness = 9;
+	// /**
+	// * The following variables (self.*) define the players character, Their
+	// * values values range between low:1 and high:9
+	// */
+	// private final byte selfRiskyness = 9;
 
 	/** Cards owned by the table */
 	protected CardStack cardStackTable;
+	/** Cards we want to get */
+	protected CardStack cardStackNeed;
 
 	// additional flags for the stack-array
-	private static final byte FLAG_CARD_TAKEN = -2;
-	private static final byte FLAG_CARD_DROPPED = -3;
+	// private static final byte FLAG_CARD_TAKEN = -2;
+	// private static final byte FLAG_CARD_DROPPED = -3;
 
 	// rating influencing parameters
 	private static final int INF_SAME_COLOR = 5;
@@ -53,6 +55,7 @@ public class DefaultPlayer extends AbstractPlayer {
 	public DefaultPlayer() {
 		super();
 		this.cardStackTable = new CardStack();
+		this.cardStackNeed = new CardStack();
 	}
 
 	/**
@@ -83,7 +86,7 @@ public class DefaultPlayer extends AbstractPlayer {
 	 */
 	private byte[] rateCards() {
 		// get a copy of out card-stack
-		byte[][] cardStackArray = this.cardStack.getArray();
+		// byte[][] cardStackArray = this.cardStack.getArray();
 		// store three cards (x,y) with one rating (z) each
 		final byte[] rating = new byte[9];
 		// rating array index pointer
@@ -479,8 +482,57 @@ public class DefaultPlayer extends AbstractPlayer {
 	public boolean doMove() {
 		Debug.println(this, "My stack: " + this.cardStack.toString());
 		Debug.println(this, "Table stack: " + this.cardStackTable.toString());
+		Debug.println(this, "Table stack: " + this.cardStackTable.toString());
+		this.recalcNeededCards();
 		this.rateCards();
 		return true;
+	}
+
+	private void recalcNeededCards() {
+		StackIterator sI = this.cardStack.new StackIterator();
+
+		this.cardStackNeed.clear();
+		while (sI.hasNext()) {
+			// skip if we don't own this card or row has been already checked
+			if ((sI.next() == CardStack.FLAG_NO_CARD)) {
+				continue;
+			}
+
+			int rowValue;
+			byte[] row;
+
+			// scan this row to collect all matches
+			rowValue = 0;
+			row = this.cardStack.getRow(sI.getColor());
+			for (int i = 0; i < CardStack.CARDS_MAX_CARD; i++) {
+				byte b = row[i];
+				if (b == CardStack.FLAG_HAS_CARD) {
+					rowValue = rowValue + DefaultPlayer.getStackCardValue(i);
+				}
+			}
+			// so we know the base value, lets calculate missing card values and
+			// add those to the cardStackNeed
+			row = this.cardStack.getRow(sI.getColor());
+			for (int i = 0; i < CardStack.CARDS_MAX_CARD; i++) {
+				byte b = row[i];
+				if (b == CardStack.FLAG_NO_CARD) {
+					this.cardStackNeed.setCardValue(
+							new int[] { i, sI.getColor() }, (byte) (rowValue
+									+ DefaultPlayer.getStackCardValue(i) + 7));
+				}
+			}
+
+			if (sI.hasNextRow()) {
+				sI.nextRow();
+			} else {
+				break;
+			}
+		}
+
+		if (Debug.debug == true) {
+			Debug.print(this, "My need stack:\n"
+					+ this.cardStackNeed.dumpStack().toString() + "\n");
+		}
 	}
 
 	@Override
