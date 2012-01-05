@@ -5,7 +5,7 @@ import java.util.Random;
 
 import swimGame.cards.CardStack;
 import swimGame.out.Console;
-import swimGame.table.Table;
+import swimGame.out.Debug;
 
 /**
  * A player playing the game. This abstract class handles the basic player
@@ -90,8 +90,9 @@ public abstract class AbstractPlayer implements IPlayer {
 			i = i + 2;
 		}
 		// this.hasCards = true;
-		Console.println("<" + this.name + ">", "Recieved cards: "
-				+ this.cardStack.toString());
+		Console.print("<" + this.name + ">", "Recieved cards");
+		Debug.print(": " + this.cardStack.toString());
+		Console.print("\n");
 	}
 
 	/**
@@ -123,18 +124,5 @@ public abstract class AbstractPlayer implements IPlayer {
 	 * @see swimGame.Table
 	 */
 	@Override
-	public void handleTableEvent(final byte event) {
-		switch (event) {
-		case Table.EVENT_CARD_DROPPED:
-			break;
-		case Table.EVENT_CARDS_DROPPED:
-			break;
-		case Table.EVENT_GAME_START:
-			break;
-		case Table.EVENT_NEXT_PLAYER:
-			break;
-		case Table.EVENT_NEXT_ROUND:
-			break;
-		}
-	}
+	public abstract void handleTableEvent(final int event);
 }
