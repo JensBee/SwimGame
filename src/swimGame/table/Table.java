@@ -27,6 +27,7 @@ public class Table {
 	// points for three cards of same type, but different color
 	public static final double PNT_THREE_OF_SAME_TYPE = 30.5;
 
+	/** Events fired to the players wile in-game */
 	public enum Event {
 		TABLE_CLOSED,
 		// Data: null
@@ -37,6 +38,12 @@ public class Table {
 		;
 	}
 
+	/**
+	 * Manage players in game-rounds
+	 * 
+	 * @author Jens Bertram <code@jens-bertram.net>
+	 * 
+	 */
 	private class PlayerIterator implements Iterator<IPlayer> {
 		private int pointer = -1;
 
@@ -75,9 +82,11 @@ public class Table {
 	}
 
 	/**
-	 * Add a player to the table.
+	 * Add a single player to the table
 	 * 
 	 * @param player
+	 * @throws Exception
+	 *             Thrown if table is full or game has already begun
 	 */
 	public void addPlayer(final IPlayer player) throws Exception {
 		// check if table is already full
@@ -106,7 +115,7 @@ public class Table {
 	/**
 	 * Close player participation opportunity and prepare game start.
 	 */
-	public void close() {
+	protected void close() {
 		if (this.tableClosed != true) {
 			this.fireEvent(Event.TABLE_CLOSED, null);
 			this.tableClosed = true;
@@ -115,6 +124,7 @@ public class Table {
 			for (IPlayer p : this.players.getList()) {
 				playerNames += p.toString() + ", ";
 			}
+			Console.nl();
 			Console.println(Table.CNAME, "*** Table closed ***");
 			Console.println(Table.CNAME, String.format(
 					"Players (in order) are: %s",
@@ -123,50 +133,21 @@ public class Table {
 	}
 
 	/**
-	 * final Start the game
+	 * Get the game started
 	 */
 	public void startGame() throws Exception {
 		if (this.players.size() <= 1) {
 			throw new Exception("No game without players!");
 		}
+
+		// no more players allowed
 		this.close();
+		// notify players
 		this.fireEvent(Event.GAME_START, null);
+		// deal cards
 		this.dealOutCards();
-	}
 
-	/**
-	 * Get a set of initial player cards
-	 * 
-	 * @return
-	 */
-	private int[] getPlayerCardSet() throws Exception {
-		final int cardSet[] = new int[6];
-		int card[];
-		// first card
-		card = this.cardStack.getRandomCard();
-		cardSet[0] = card[0]; // card
-		cardSet[1] = card[1]; // color
-		// second card
-		card = this.cardStack.getRandomCard();
-		cardSet[2] = card[0]; // card
-		cardSet[3] = card[1]; // color
-		// second card
-		card = this.cardStack.getRandomCard();
-		cardSet[4] = card[0]; // card
-		cardSet[5] = card[1]; // color
-		return cardSet;
-	}
-
-	/**
-	 * Prepare the next round
-	 */
-	private void nextRound() {
-		this.currentRound++;
-		Console.println(Table.CNAME,
-				String.format("*** Round %d ***", this.currentRound));
-	}
-
-	private void runGame() {
+		// run tings
 		this.currentRound = 0;
 		while (this.gameFinished == false) {
 			this.nextRound();
@@ -174,7 +155,7 @@ public class Table {
 			while (this.playerIt.hasNext()) {
 				Console.println(Table.CNAME,
 						"Cards: " + this.cardStackTable.toString());
-				this.playerIt.next().doMove();
+				this.playerIt.next().doMove(this.cardStackTable);
 			}
 			this.playerIt.reset();
 
@@ -186,10 +167,31 @@ public class Table {
 	}
 
 	/**
+	 * Generate a random card-set for a player
+	 * 
+	 * @return The randomly generated card-set
+	 * @throws Exception
+	 */
+	private byte[] getPlayerCardSet() throws Exception {
+		return new byte[] { this.cardStack.getRandomCard(),
+				this.cardStack.getRandomCard(), this.cardStack.getRandomCard() };
+	}
+
+	/**
+	 * Prepare for the next round
+	 */
+	private void nextRound() {
+		this.currentRound++;
+		Console.nl();
+		Console.println(Table.CNAME,
+				String.format("*** Round %d ***", this.currentRound));
+	}
+
+	/**
 	 * Deliver cards to players
 	 */
 	private void dealOutCards() throws Exception {
-		int[] firstCards = new int[6];
+		byte[] firstCards = new byte[3];
 		// player who starts the game
 		final IPlayer firstPlayer = this.players.get(this.playerIt.getId());
 		this.close(); // game starts now
@@ -225,15 +227,24 @@ public class Table {
 					"Dealing out a second cardset for %s..", firstPlayer));
 			firstPlayer.setCards(this.getPlayerCardSet());
 		} else {
-			// player took first cards - make seconds public
-			int cards[] = this.getPlayerCardSet();
+			// player took first cards - make a second public
+			byte cards[] = this.getPlayerCardSet();
 			this.fireEvent(Event.INITIAL_CARDS_DROPPED, cards);
 			// update cards on table
-			this.cardStackTable.addCards(firstCards);
+			this.cardStackTable.addCards(cards);
 		}
-		this.runGame();
 	}
 
+	/**
+	 * Fire an event to all registered players.
+	 * 
+	 * TODO: data needs to be generalized
+	 * 
+	 * @param event
+	 *            The event
+	 * @param data
+	 *            Some sort of data associated with an event
+	 */
 	private void fireEvent(Event event, Object data) {
 		for (IPlayer p : this.players.getList()) {
 			p.handleTableEvent(event, data);

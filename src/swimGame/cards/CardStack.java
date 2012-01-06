@@ -1,5 +1,6 @@
 package swimGame.cards;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Random;
 
@@ -20,6 +21,7 @@ public class CardStack {
 	public static final int CARDS_MAX_COLOR = 4;
 	public static final int CARDS_MAX_CARD = 8;
 	public static final int CARDS_MAX = 32;
+	public static final int STACK_SIZE = (CardStack.CARDS_MAX_CARD * CardStack.CARDS_MAX_COLOR);
 	// the minimum of the reachable points
 	public static final int STACKVALUE_MIN = 24; // 7 + 8 + 9
 	// the maximum of the reachable points
@@ -30,47 +32,33 @@ public class CardStack {
 	public static final byte FLAG_UNINITIALIZED = -1;
 
 	// Card names for pretty printing
-	private static final char SYM_DIAMOND = '♦';
-	private static final char SYM_HEART = '♥';
-	private static final char SYM_SPADE = '♠';
-	private static final char SYM_CLUB = '♣';
-	private static final String NAME_JACK = "J";
-	private static final String NAME_QUEEN = "Q";
-	private static final String NAME_KING = "K";
-	private static final String NAME_ACE = "A";
-	private static final String[][] cardStackStr = { //
-			{ CardStack.SYM_DIAMOND + "7", CardStack.SYM_HEART + "7",
-					CardStack.SYM_SPADE + "7", CardStack.SYM_CLUB + "7" },
-			{ CardStack.SYM_DIAMOND + "8", CardStack.SYM_HEART + "8",
-					CardStack.SYM_SPADE + "8", CardStack.SYM_CLUB + "8" },
-			{ CardStack.SYM_DIAMOND + "9", CardStack.SYM_HEART + "9",
-					CardStack.SYM_SPADE + "9", CardStack.SYM_CLUB + "9" },
-			{ CardStack.SYM_DIAMOND + "10", CardStack.SYM_HEART + "10",
-					CardStack.SYM_SPADE + "10", CardStack.SYM_CLUB + "10" },
-			{ CardStack.SYM_DIAMOND + CardStack.NAME_JACK,
-					CardStack.SYM_HEART + CardStack.NAME_JACK,
-					CardStack.SYM_SPADE + CardStack.NAME_JACK,
-					CardStack.SYM_CLUB + CardStack.NAME_JACK },
-			{ CardStack.SYM_DIAMOND + CardStack.NAME_QUEEN,
-					CardStack.SYM_HEART + CardStack.NAME_QUEEN,
-					CardStack.SYM_SPADE + CardStack.NAME_QUEEN,
-					CardStack.SYM_CLUB + CardStack.NAME_QUEEN },
-			{ CardStack.SYM_DIAMOND + CardStack.NAME_KING,
-					CardStack.SYM_HEART + CardStack.NAME_KING,
-					CardStack.SYM_SPADE + CardStack.NAME_KING,
-					CardStack.SYM_CLUB + CardStack.NAME_KING },
-			{ CardStack.SYM_DIAMOND + CardStack.NAME_ACE,
-					CardStack.SYM_HEART + CardStack.NAME_ACE,
-					CardStack.SYM_SPADE + CardStack.NAME_ACE,
-					CardStack.SYM_CLUB + CardStack.NAME_ACE }, };
+	private static final char[] CARD_SYMBOLS = { '♦', '♥', '♠', '♣' };
+	private static final String[] CARD_NAMES = { "7", "8", "9", "10", "J", "Q",
+			"K", "A" };
+	private static String[] cardStackStr;
 
-	/** Card stack of this table */
-	private byte[][] cardStack = new byte[CardStack.CARDS_MAX_CARD][CardStack.CARDS_MAX_COLOR];
+	// Card stack of this table
+	private byte[] cardStack = new byte[CardStack.STACK_SIZE];
+
+	// card counter for this stack
+	private byte cardsCount = 0;
+
+	private void buildStringArray() {
+		CardStack.cardStackStr = new String[CardStack.CARDS_MAX];
+		int idx = 0;
+		for (int color = 0; color < CardStack.CARDS_MAX_COLOR; color++) {
+			for (int card = 0; card < CardStack.CARDS_MAX_CARD; card++) {
+				CardStack.cardStackStr[idx++] = CardStack.CARD_SYMBOLS[color]
+						+ CardStack.CARD_NAMES[card];
+			}
+		}
+	}
 
 	/**
 	 * Empty constructor
 	 */
 	public CardStack() {
+		this.buildStringArray();
 	}
 
 	/**
@@ -81,6 +69,7 @@ public class CardStack {
 	 *            are on the stack)
 	 */
 	public CardStack(final boolean filled) {
+		this.buildStringArray();
 		if (filled == true) {
 			// The card stack will be initially full
 			this.cardStack = CardStack.getNewStack(true);
@@ -96,28 +85,23 @@ public class CardStack {
 	 * @throws Exception
 	 *             Thrown if you specify less or more than three cards
 	 */
-	public CardStack(final int[] initialCards) throws Exception {
-		if (initialCards.length < 5) {
+	public CardStack(final byte[] initialCards) throws Exception {
+		this.buildStringArray();
+		if (initialCards.length < 3) {
 			throw new Exception(
 					"You must give three cards to initialize a CardStack!");
 		}
-		for (int i = 0; i <= 5;) {
-			this.addCard(new int[] { initialCards[i], initialCards[i + 1] });
-			i = i + 2;
-		}
-		this.empty = false;
+		this.addCards(initialCards);
 	}
 
 	/**
-	 * Get the string representation for a card
+	 * Get a string representation of the given card.
 	 * 
-	 * @param card
-	 *            The card defined by it's array coordinates [card, color]
-	 * @return The string representation of the given card
-	 * @see swimGame.cards.CardUtils#initCardStack
+	 * @return A string that looks like [♥A] for heart-ace
 	 */
-	public static String cardToString(final int[] card) {
-		return "[" + CardStack.cardStackStr[card[0]][card[1]] + "]";
+	public static String cardToString(final int card) {
+		CardStack.checkCardPosition(card);
+		return "[" + CardStack.cardStackStr[card] + "]";
 	}
 
 	/**
@@ -126,7 +110,7 @@ public class CardStack {
 	 * @return Byte array representing the card
 	 * @see swimGame.cards.CardUtils#initCardStack
 	 */
-	public int[] getRandomCard() throws Exception {
+	public byte getRandomCard() throws Exception {
 		if (this.empty) {
 			throw new Exception("Unable to get a card. Stack is empty!");
 		}
@@ -134,21 +118,16 @@ public class CardStack {
 		if (CardStack.random == null) {
 			CardStack.random = new Random();
 		}
-		// final boolean gotCard = false;
-		final int[] card = new int[2];
 
 		// try to find a random card that's still on the stack
 		// TODO: make this aware of available cards to be more intelligent
 		while (true) {
-			// the card
-			card[0] = CardStack.random.nextInt(CardStack.CARDS_MAX_CARD);
-			// the color
-			card[1] = CardStack.random.nextInt(CardStack.CARDS_MAX_COLOR);
-
-			if (this.cardStack[card[0]][card[1]] == CardStack.FLAG_HAS_CARD) {
+			int card = CardStack.random.nextInt(CardStack.CARDS_MAX_CARD
+					* CardStack.CARDS_MAX_COLOR);
+			if (this.cardStack[card] == CardStack.FLAG_HAS_CARD) {
 				// card is there .. take it
-				this.cardStack[card[0]][card[1]] = CardStack.FLAG_NO_CARD;
-				return card;
+				this.cardStack[card] = CardStack.FLAG_NO_CARD;
+				return (byte) card;
 			}
 		}
 	}
@@ -159,9 +138,10 @@ public class CardStack {
 	 * @param card
 	 *            The card to add
 	 */
-	public void addCard(final int[] card) {
-		this.cardStack[card[0]][card[1]] = CardStack.FLAG_HAS_CARD;
+	public void addCard(int card) {
+		this.cardStack[card] = CardStack.FLAG_HAS_CARD;
 		this.empty = false;
+		this.cardsCount++;
 	}
 
 	/**
@@ -173,42 +153,14 @@ public class CardStack {
 			return "";
 		}
 		String cards = "";
-		for (int card = 0; card < CardStack.CARDS_MAX_CARD; card++) {
-			for (int color = 0; color < CardStack.CARDS_MAX_COLOR; color++) {
-				// check if we own this card
-				if (this.cardStack[card][color] == CardStack.FLAG_HAS_CARD) {
-					cards += CardStack.cardToString(new int[] { card, color });
-				}
+		int idx = 0;
+		for (byte card : this.cardStack) {
+			if (card == CardStack.FLAG_HAS_CARD) {
+				cards += CardStack.cardToString(idx);
 			}
+			idx++;
 		}
 		return cards;
-	}
-
-	/**
-	 * Build a card stack
-	 * 
-	 * The card stack array will look like this:
-	 * 
-	 * <pre>
-	 *   7 8 9 10 B D K A 
-	 * ♦ . . . .  . . . .
-	 * ♥ . . . .  . . . . 
-	 * ♠ . . . .  . . . . 
-	 * ♣ . . . .  . . . .
-	 * </pre>
-	 * 
-	 * To win a game basically a right aligned horizontal line or a right
-	 * aligned vertical line is what we want.
-	 */
-	private static byte[][] initCardStack(final byte[][] cardStack) {
-		// fill the card-stack
-		for (int card = 0; card < 8; card++) {
-			for (int color = 0; color < 4; color++) {
-				// build the stack byte array
-				cardStack[card][color] = 1;
-			}
-		}
-		return cardStack;
 	}
 
 	/**
@@ -217,229 +169,117 @@ public class CardStack {
 	 * @param full
 	 * @return
 	 */
-	public static byte[][] getNewStack(final boolean full) {
-		byte[][] cardStack = new byte[8][4];
+	public static byte[] getNewStack(final boolean full) {
+		byte[] cardStack = new byte[CardStack.CARDS_MAX_CARD
+				* CardStack.CARDS_MAX_COLOR];
 		if (full) {
-			cardStack = CardStack.initCardStack(cardStack);
+			// this stack will contain all cards
+			for (int i = 0; i < cardStack.length; i++) {
+				cardStack[i] = 1;
+			}
 		}
 		return cardStack;
 	}
 
-	public static String getAsString(int[] cards) {
-		// if ((cards.length % 2) != 0) {
-		// throw new IllegalArgumentException(
-		// "The array you specified is not a sequence of touples.");
-		// }
-		// for (int i = 0; i < cards.length; i++) {
-		// this.addCard(new int[] { cards[i], cards[i + 1] });
-		// i = i + 1;
-		// }
-		return null;
-	}
-
-	/**
-	 * Clear out the current card-stack
-	 */
+	/** Clear out the current card-stack */
 	public void clear() {
-		this.cardStack = new byte[CardStack.CARDS_MAX_CARD][CardStack.CARDS_MAX_COLOR];
+		this.cardStack = new byte[CardStack.CARDS_MAX_CARD
+				* CardStack.CARDS_MAX_COLOR];
 		this.empty = true;
 	}
 
-	/**
-	 * Get the byte array for this card-stack
-	 * 
-	 * @return The byte array used by this card-stack
-	 */
-	public byte[][] getArray() {
+	/** Fills the card-stack with the given value */
+	public void fill(byte value) {
+		Arrays.fill(this.cardStack, value);
+	}
+
+	/** Get the byte array for this card-stack */
+	public byte[] getArray() {
 		return this.cardStack.clone();
 	}
 
-	/**
-	 * Remove a card from this stack
-	 * 
-	 * @param card
-	 *            The card to remove
-	 */
-	public void removeCard(final int[] card) {
-		this.cardStack[card[0]][card[1]] = CardStack.FLAG_NO_CARD;
+	/** Remove a card from this stack */
+	public void removeCard(final int card) {
+		this.cardStack[card] = CardStack.FLAG_NO_CARD;
 	}
 
-	/**
-	 * Get all cards belonging to the given color
-	 * 
-	 * @param color
-	 * @return
-	 * @throws IllegalArgumentException
-	 */
-	public byte[] getCardsByColor(byte color) throws IllegalArgumentException {
-		if ((color < 0) || (color > CardStack.CARDS_MAX_COLOR)) {
+	/** Check if a card type is in the legal range */
+	private static void checkCardTypeRange(final int cardType) {
+		if ((cardType < 0) || (cardType > CardStack.CARDS_MAX_CARD)) {
 			throw new IllegalArgumentException(String.format(
-					"Card color %d out of bounds (%d-%d)", color, 0,
+					"Card type %d out of bounds (%d-%d)", cardType, 0,
+					CardStack.CARDS_MAX_CARD));
+		}
+	}
+
+	/** Check if a card color is in the legal range */
+	private static void checkCardColorRange(final int cardColor) {
+		if ((cardColor < 0) || (cardColor > CardStack.CARDS_MAX_COLOR)) {
+			throw new IllegalArgumentException(String.format(
+					"Card color %d out of bounds (%d-%d)", cardColor, 0,
 					CardStack.CARDS_MAX_COLOR));
 		}
-
-		// we have three cards max..
-		byte[] cards = new byte[] { CardStack.FLAG_UNINITIALIZED,
-				CardStack.FLAG_UNINITIALIZED, CardStack.FLAG_UNINITIALIZED };
-		// ..track them
-		int cardCount = 0;
-
-		// go through cards..
-		for (byte card = 0; card < CardStack.CARDS_MAX_CARD; card++) {
-			// ..to check if we own it..
-			if (this.cardStack[card][color] == CardStack.FLAG_NO_CARD) {
-				// ..no we don't - check next
-				continue;
-			}
-			cards[cardCount++] = card;
-
-			if (cardCount > 3) {
-				break;
-			}
-		}
-		return cards;
 	}
 
-	/**
-	 * Get all cards belonging to the given type
-	 * 
-	 * @param cardType
-	 * @return
-	 * @throws IllegalArgumentException
-	 */
-	public byte[] getCardsByType(byte cardType) throws IllegalArgumentException {
-		if ((cardType < 0) || (cardType > CardStack.CARDS_MAX_CARD)) {
+	/** Check if a cards position in the stack is a legal one */
+	private static void checkCardPosition(final int card) {
+		if ((card > CardStack.STACK_SIZE) || (card < 0)) {
 			throw new IllegalArgumentException(String.format(
-					"Card type %d out of bounds (%d-%d)", cardType, 0,
-					CardStack.CARDS_MAX_CARD));
+					"Card type %d out of bounds (%d-%d)", card, 0,
+					CardStack.STACK_SIZE));
 		}
-
-		// we have three cards max..
-		byte[] cards = new byte[] { CardStack.FLAG_UNINITIALIZED,
-				CardStack.FLAG_UNINITIALIZED, CardStack.FLAG_UNINITIALIZED };
-		// ..track them
-		int cardCount = 0;
-
-		// go through cards..
-		for (byte color = 0; color < CardStack.CARDS_MAX_COLOR; color++) {
-			// ..to check if we own it..
-			if (this.cardStack[cardType][color] == CardStack.FLAG_NO_CARD) {
-				// ..no we don't - check next
-				continue;
-			}
-			cards[cardCount++] = cardType;
-
-			if (cardCount > 3) {
-				break;
-			}
-		}
-		return cards;
 	}
 
-	/**
-	 * Get a column (colors for a type) from the card-stack
-	 * 
-	 * @param cardType
-	 * @return
-	 */
-	public byte[] getColumn(int cardType) {
-		if ((cardType < 0) || (cardType > CardStack.CARDS_MAX_CARD)) {
-			throw new IllegalArgumentException(String.format(
-					"Card type %d out of bounds (%d-%d)", cardType, 0,
-					CardStack.CARDS_MAX_CARD));
-		}
-		byte[] col = new byte[CardStack.CARDS_MAX_COLOR];
+	/** Get all cards for a specific card-type (7,8,9,10,J,Q,K,A) */
+	public byte[] getCardsByType(int cardType) {
+		CardStack.checkCardTypeRange(cardType);
+		byte[] typeCards = new byte[CardStack.CARDS_MAX_COLOR];
+
+		int offset = cardType;
 		for (int i = 0; i < CardStack.CARDS_MAX_COLOR; i++) {
-			col[i] = this.cardStack[cardType][i];
+			typeCards[i] = (byte) (offset + (i * CardStack.CARDS_MAX_CARD));
 		}
-		return col;
+		return typeCards;
 	}
 
-	/**
-	 * Get a row (types by color) from the card-stack
-	 * 
-	 * @param color
-	 * @return
-	 */
-	public byte[] getRow(int color) {
-		if ((color < 0) || (color > CardStack.CARDS_MAX_COLOR)) {
-			throw new IllegalArgumentException(String.format(
-					"Card color %d out of bounds (%d-%d)", color, 0,
-					CardStack.CARDS_MAX_COLOR));
-		}
-		byte[] row = new byte[CardStack.CARDS_MAX_CARD];
+	/** Get all cards for a specific card-color (♦, ♥, ♠, ♣) */
+	public byte[] getCardsByColor(int cardColor) {
+		CardStack.checkCardColorRange(cardColor);
+		byte[] colorCards = new byte[CardStack.CARDS_MAX_CARD];
+
+		int offset = cardColor * CardStack.CARDS_MAX_CARD;
 		for (int i = 0; i < CardStack.CARDS_MAX_CARD; i++) {
-			row[i] = this.cardStack[i][color];
+			colorCards[i] = (byte) (offset + i);
 		}
-		return row;
+		return colorCards;
 	}
 
 	/**
-	 * Iterator that steps from top left to bottom right through the stack-array
+	 * Iterator that steps from top left to right through the stack-array
 	 * 
 	 * @author Jens Bertram <code@jens-bertram.net>
 	 * 
 	 */
 	public class StackIterator implements Iterator<Integer> {
-		int row;
-		int col;
+		int pointer = 0;
 
 		public StackIterator() {
-			this.row = 0;
-			this.col = -1;
+			this.pointer = 0;
 		}
 
 		@Override
 		public boolean hasNext() {
-			// last row
-			if (this.row == (CardStack.CARDS_MAX_COLOR - 1)) {
-				// before last col?
-				if (this.col < (CardStack.CARDS_MAX_CARD - 1)) {
-					// there are cols left
-					return true;
-				}
-				return false;
-			}
-			return true;
-		}
-
-		public boolean hasNextRow() {
-			int oldCol = this.col;
-			// move col pointer temporary to the end
-			this.col = CardStack.CARDS_MAX_CARD - 1;
-			// check if there's something next
-			boolean hasNext = this.hasNext();
-			// undo changes
-			this.col = oldCol;
-
-			return hasNext;
+			return ((this.pointer + 1) < CardStack.this.cardStack.length) ? true
+					: false;
 		}
 
 		@Override
-		public Integer next() throws IllegalStateException {
+		public Integer next() {
 			if (this.hasNext()) {
-				if (this.col < (CardStack.CARDS_MAX_CARD - 1)) {
-					this.col++;
-				} else {
-					this.col = 0;
-					this.row++;
-				}
-
 				return Integer
-						.valueOf(CardStack.this.cardStack[this.col][this.row]);
+						.valueOf(CardStack.this.cardStack[this.pointer++]);
 			}
 			throw new IllegalStateException("You tried to step out of bounds.");
-		}
-
-		/**
-		 * Get the first element of the next row
-		 * 
-		 * @return
-		 * @throws IllegalStateException
-		 */
-		public Integer nextRow() throws IllegalStateException {
-			this.col = CardStack.CARDS_MAX_CARD - 1;
-			return this.next();
 		}
 
 		@Override
@@ -447,48 +287,116 @@ public class CardStack {
 			throw new IllegalStateException("Operation not supported.");
 		}
 
-		/**
-		 * Get the current card type
-		 * 
-		 * @return
-		 */
+		/** Get the current card */
 		public int getCard() {
-			return this.col;
+			// be careful we're one ahead here
+			return this.pointer - 1;
 		}
 
-		/**
-		 * Get the color of the current card
-		 * 
-		 * @return
-		 */
-		public int getColor() {
-			return this.row;
+		public boolean hasNextColor() {
+			int col = this.getCard() / CardStack.CARDS_MAX_CARD;
+			if ((col + 1) < CardStack.CARDS_MAX_COLOR) {
+				return true;
+			}
+			return false;
+		}
+
+		/** Move pointer to beginning of next color */
+		public void nextColor() {
+			if (this.hasNextColor()) {
+				int col = this.getCard() / CardStack.CARDS_MAX_CARD;
+				this.pointer = ((col + 1) * CardStack.CARDS_MAX_CARD);
+			} else {
+				throw new IllegalStateException(
+						"You tried to step out of bounds.");
+			}
+		}
+
+		/** Get the current card type */
+		public int getCardType() {
+			return CardStack.this.getCardType(this.getCard());
+		}
+
+		/** Get the color of the current card */
+		public int getCardColor() {
+			if (this.pointer < CardStack.CARDS_MAX_CARD) {
+				return 0;
+			}
+			return CardStack.this.getCardColor(this.getCard());
 		}
 	}
 
 	/**
-	 * Add cards from an integer sequence [(card,color),..]
+	 * Get an array with all cards currently in this stack. This will only find
+	 * cards witch were added with the appropriate add functions.
 	 * 
-	 * @param data
+	 * @return A byte array containing only available cards
 	 */
-	public void addCards(int[] data) throws IllegalArgumentException {
-		if ((data.length % 2) != 0) {
-			throw new IllegalArgumentException(
-					"The array you specified is not a sequence of touples.");
+	public byte[] getCards() {
+		byte[] cards = new byte[this.cardsCount];
+		int currentCard = 0;
+		for (int i = 0; i < this.cardStack.length; i++) {
+			if (currentCard > this.cardsCount) {
+				// we've found all
+				break;
+			}
+			if (this.hasCard(i)) {
+				cards[currentCard++] = (byte) i;
+			}
 		}
-		for (int i = 0; i < data.length; i++) {
-			this.addCard(new int[] { data[i], data[i + 1] });
-			i = i + 1;
-		}
+		return cards;
 	}
 
 	/**
-	 * Sets a custom value instead of the predefined flags for a card
+	 * Get the color number for a card.
+	 * 
+	 * @param card
+	 *            The card to check
+	 * @return The card color: 0=♦; 1=♥; 2=♠; 3=♣
 	 */
-	public void setCardValue(int[] aCard, byte value) {
-		this.cardStack[aCard[0]][aCard[1]] = value;
+	public int getCardColor(int card) {
+		CardStack.checkCardPosition(card);
+		return card / CardStack.CARDS_MAX_CARD;
 	}
 
+	/** Get the type for a card */
+	public int getCardType(int card) {
+		CardStack.checkCardPosition(card);
+		return (card < CardStack.CARDS_MAX_CARD) ? card
+				: (card % CardStack.CARDS_MAX_CARD);
+	}
+
+	/** Add a bunch of cards */
+	public void addCards(byte[] cards) {
+		for (int card : cards) {
+			this.addCard(card);
+		}
+		this.empty = false;
+	}
+
+	/**
+	 * Sets a custom value instead of the predefined flags for a card. This
+	 * passes by the check if a card is available (set CardStack#FLAG_HAS_CARD).
+	 * If you want to add a card use addCard() or addCards() instead.
+	 */
+	public void setCardValue(int card, byte value) {
+		CardStack.checkCardPosition(card);
+		this.cardStack[card] = value;
+	}
+
+	/** Gets the value for a card */
+	public byte getCardValue(int card) {
+		CardStack.checkCardPosition(card);
+		return this.cardStack[card];
+	}
+
+	/** Checks if this card is in this stack */
+	public boolean hasCard(int card) {
+		CardStack.checkCardPosition(card);
+		return (this.cardStack[card] == CardStack.FLAG_HAS_CARD) ? true : false;
+	}
+
+	/** Dump the current stack as nicely formatted table */
 	public StringBuffer dumpStack() {
 		StringBuffer dumpStr = new StringBuffer();
 
@@ -497,29 +405,17 @@ public class CardStack {
 
 		dumpStr.append(String.format(
 				" |   7|   8|   9|  10|   %s|   %s|   %s|   %s|",
-				CardStack.NAME_JACK, CardStack.NAME_QUEEN, CardStack.NAME_KING,
-				CardStack.NAME_ACE));
+				CardStack.CARD_NAMES[4], CardStack.CARD_NAMES[5],
+				CardStack.CARD_NAMES[6], CardStack.CARD_NAMES[7]));
 		dumpStr.append(separator);
-		dumpStr.append(String.format(content, CardStack.SYM_DIAMOND,
-				this.cardStack[1][0], this.cardStack[1][0],
-				this.cardStack[2][0], this.cardStack[3][0],
-				this.cardStack[4][0], this.cardStack[5][0],
-				this.cardStack[6][0], this.cardStack[7][0]));
-		dumpStr.append(String.format(content, CardStack.SYM_HEART,
-				this.cardStack[1][1], this.cardStack[1][1],
-				this.cardStack[2][1], this.cardStack[3][1],
-				this.cardStack[4][1], this.cardStack[5][1],
-				this.cardStack[6][1], this.cardStack[7][1]));
-		dumpStr.append(String.format(content, CardStack.SYM_SPADE,
-				this.cardStack[1][2], this.cardStack[1][2],
-				this.cardStack[2][2], this.cardStack[3][2],
-				this.cardStack[4][2], this.cardStack[5][2],
-				this.cardStack[6][2], this.cardStack[7][2]));
-		dumpStr.append(String.format(content, CardStack.SYM_CLUB,
-				this.cardStack[1][3], this.cardStack[1][3],
-				this.cardStack[2][3], this.cardStack[3][3],
-				this.cardStack[4][3], this.cardStack[5][3],
-				this.cardStack[6][3], this.cardStack[7][3]));
+		for (int i = 0; i < CardStack.CARDS_MAX_COLOR; i++) {
+			int offset = (i * CardStack.CARDS_MAX_CARD);
+			dumpStr.append(String.format(content, CardStack.CARD_SYMBOLS[i],
+					this.cardStack[offset + 0], this.cardStack[offset + 1],
+					this.cardStack[offset + 2], this.cardStack[offset + 3],
+					this.cardStack[offset + 4], this.cardStack[offset + 5],
+					this.cardStack[offset + 6], this.cardStack[offset + 7]));
+		}
 		dumpStr.append(separator);
 		return dumpStr;
 	}

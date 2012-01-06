@@ -10,10 +10,15 @@ public class Console {
 	}
 
 	public static void println(final String prefix, final String message) {
-		System.out.println("[" + prefix + "] " + message);
+		Console.println("[" + prefix + "] " + message);
 	}
 
 	public static void print(final String prefix, final String message) {
-		System.out.print("[" + prefix + "] " + message);
+		Console.print("[" + prefix + "] " + message);
+	}
+
+	public static Class<Console> nl() {
+		Console.print("\n");
+		return Console.class;
 	}
 }

@@ -78,19 +78,9 @@ public abstract class AbstractPlayer implements IPlayer {
 	 * @throws Exception
 	 */
 	@Override
-	public void setCards(final int[] cards) throws Exception {
-		if (this.cardStack != null) {
-			this.cardStack.clear();
-		} else {
-			this.cardStack = new CardStack(cards);
-		}
-		// add cards to our stack
-		for (int i = 0; i <= 5;) {
-			this.cardStack.addCard(new int[] { cards[i], cards[i + 1] });
-			i = i + 2;
-		}
-		// this.hasCards = true;
-		Console.print("<" + this.name + ">", "Recieved cards");
+	public void setCards(final byte[] cards) throws Exception {
+		this.cardStack = new CardStack(cards);
+		Debug.print(this, "Recieved cards");
 		Debug.print(": " + this.cardStack.toString());
 		Console.print("\n");
 	}
