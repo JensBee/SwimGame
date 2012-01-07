@@ -32,8 +32,8 @@ public class CardStack {
 	public static final byte FLAG_UNINITIALIZED = -1;
 
 	// Card names for pretty printing
-	private static final char[] CARD_SYMBOLS = { '♦', '♥', '♠', '♣' };
-	private static final String[] CARD_NAMES = { "7", "8", "9", "10", "J", "Q",
+	public static final char[] CARD_SYMBOLS = { '♦', '♥', '♠', '♣' };
+	public static final String[] CARD_NAMES = { "7", "8", "9", "10", "J", "Q",
 			"K", "A" };
 	private static String[] cardStackStr;
 
