@@ -3,9 +3,9 @@ package swimGame.player;
 import java.util.ArrayList;
 import java.util.Random;
 
-import swimGame.cards.CardStack;
 import swimGame.out.Console;
 import swimGame.out.Debug;
+import swimGame.table.CardStack;
 
 /**
  * A player playing the game. This abstract class handles the basic player
@@ -16,19 +16,28 @@ import swimGame.out.Debug;
  * @author Jens Bertram <code@jens-bertram.net>
  * 
  */
-public abstract class AbstractPlayer implements IPlayer {
+abstract class AbstractPlayer implements IPlayer {
 	/**
 	 * The name of this player
 	 */
-	protected String name;
+	private final String name;
 	/**
 	 * Holds a list of predefined player names
 	 */
 	private static ArrayList<String> nameList;
 	// one random generator for all players
-	protected static Random random;
+	private static Random random;
 	/** Cards owned by this player */
 	protected CardStack cardStack = null;
+
+	/**
+	 * Log a message to the console
+	 * 
+	 * @param message
+	 */
+	protected void log(String message) {
+		Console.println(this, message);
+	}
 
 	/**
 	 * Initialize the predefined player names
@@ -78,11 +87,9 @@ public abstract class AbstractPlayer implements IPlayer {
 	 * @throws Exception
 	 */
 	@Override
-	public void setCards(final byte[] cards) throws Exception {
+	public void setCards(final byte[] cards) {
 		this.cardStack = new CardStack(cards);
-		Debug.print(this, "Recieved cards");
-		Debug.print(": " + this.cardStack.toString());
-		Console.print("\n");
+		Debug.print(this, "Recieved cards: " + this.cardStack.toString() + "\n");
 	}
 
 	/**

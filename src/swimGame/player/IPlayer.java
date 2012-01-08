@@ -1,6 +1,5 @@
 package swimGame.player;
 
-import swimGame.cards.CardStack;
 import swimGame.table.Table;
 
 /**
@@ -12,27 +11,9 @@ import swimGame.table.Table;
  */
 public interface IPlayer {
 	/**
-	 * Cards passed to the player from the table. The int[] array consists of 3
-	 * values. Each representing a card (see array-table below). ♦7 will be
-	 * represented as 0, ♣A will be represented as 31.
-	 * 
-	 * <pre>
-	 * Example (31 = ♣A): 
-	 * 	ROW: (31/8) = 3,..; 3 is the row (♣)
-	 *  COLUMN: (31 - (3*8)) = 7; 7 is the column (A)
-	 * </pre>
-	 * 
-	 * <pre>
-	 *  Array table:
-	 *  
-	 *   7 8 9 10 J Q K A 
-	 * ♦ . . . .  . . . .
-	 * ♥ . . . .  . . . . 
-	 * ♠ . . . .  . . . . 
-	 * ♣ . . . .  . . . .
-	 * </pre>
+	 * Cards passed to the player from the table.
 	 */
-	public void setCards(final byte[] cards) throws Exception;
+	public void setCards(final byte[] cards);
 
 	/**
 	 * Handle events emitted by the table. See Table class for a reference of
@@ -57,5 +38,18 @@ public interface IPlayer {
 	 */
 	public boolean keepCardSet();
 
-	public boolean doMove(CardStack table);
+	/**
+	 * It's this players turn to decite for a move
+	 * 
+	 * @param tableCards
+	 */
+	public void doMove(byte[] tableCards);
+
+	/**
+	 * Get the list of cards owned by this player. This should only return
+	 * something, if the table game is finished.
+	 * 
+	 * @return
+	 */
+	public byte[] getCards();
 }
