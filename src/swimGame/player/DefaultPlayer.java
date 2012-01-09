@@ -28,10 +28,14 @@ public class DefaultPlayer extends AbstractPlayer {
 	    CardStack.FLAG_UNINITIALIZED };
     // the round we're playing
     private int gameRound = 0;
+    // tracks, wich colors were dropped during the game
+    protected byte[] dropColorIndex = new byte[CardStack.CARDS_MAX_COLOR];
 
     // --- behavior defaults
     // below witch value should we drop an initial card stack immediately?
-    private static final int STACk_DROP_TRESHOLD = 20;
+    private final int behave_initialStackDropThreshold = 20;
+    // when to consider dropping the stack
+    private final int behave_stackDropThreshold = 20;
 
     // nested classes
     private CardRating cardRating = null;
@@ -42,6 +46,7 @@ public class DefaultPlayer extends AbstractPlayer {
 	this.cardStackNeed = new CardStack();
 	this.cardStackTable
 		.fill((byte) DefaultPlayer.CardRating.INFLUENCE_DEFAULT_UNSEEN);
+	this.dropColorIndex = new byte[CardStack.CARDS_MAX_COLOR];
 	this.gameRound = 0;
 	if (this.cardRating != null) {
 	    this.cardRating.reset();
@@ -61,12 +66,30 @@ public class DefaultPlayer extends AbstractPlayer {
      * 
      */
     private static class Rating {
-	/** Calculate with default min to zero */
-	// TODO reuse other, rturn double
+	/**
+	 * Calculate with default minimum fixed to zero
+	 * 
+	 * @param max
+	 *            Maximum value
+	 * @param value
+	 *            Current value
+	 * @return Normalized value
+	 */
 	protected static double normalize(double max, double value) {
 	    return Rating.normalize(0, max, value);
 	}
 
+	/**
+	 * Calculate a normalized value
+	 * 
+	 * @param min
+	 *            Minimum value
+	 * @param max
+	 *            Maximum value
+	 * @param value
+	 *            Current value
+	 * @return Normalized value
+	 */
 	protected static double normalize(double min, double max, double value) {
 	    return new Double(((value - min) / (max - min)) * 10);
 	}
@@ -79,6 +102,18 @@ public class DefaultPlayer extends AbstractPlayer {
      * 
      */
     private class CardRating {
+	private static final double RATING_DEFAULT = -1;
+	// stores ratings for later calculations
+	private final double[] ratings = new double[] { RATING_DEFAULT,
+		RATING_DEFAULT, RATING_DEFAULT, RATING_DEFAULT, RATING_DEFAULT,
+		RATING_DEFAULT };
+	private static final int RATING_COLOR = 0;
+	private static final int RATING_COLORFREQUENCY = 1;
+	private static final int RATING_TYPE = 2;
+	private static final int RATING_VALUE = 3;
+	private static final int RATING_AVAILABILITY = 4;
+	private static final int RATING_GOALDISTANCE = 5;
+
 	// rating influencing parameters
 	private static final int INFLUENCE_SAME_COLOR = 5;
 	private static final int INFLUENCE_SAME_TYPE = 10;
@@ -86,15 +121,14 @@ public class DefaultPlayer extends AbstractPlayer {
 	private static final int INFLUENCE_DEFAULT_UNSEEN = -5;
 	// the maximum value a card rating by type may reach
 	protected final int worth_max_by_type = (2 * CardRating.INFLUENCE_SAME_TYPE)
-		+ this.getNormalizedValue(CardStack.CARDS_MAX - 1)
-		+ this.getNormalizedValue(CardStack.CARDS_MAX - 2)
-		+ this.getNormalizedValue(CardStack.CARDS_MAX - 3);
+		+ this.getNormalizedCardRating(CardStack.CARDS_MAX - 1)
+		+ this.getNormalizedCardRating(CardStack.CARDS_MAX - 2)
+		+ this.getNormalizedCardRating(CardStack.CARDS_MAX - 3);
 	// the maximum value a card rating by color may reach
 	private final int worth_max_by_color = (2 * CardRating.INFLUENCE_SAME_COLOR)
-		+ this.getNormalizedValue(CardStack.CARDS_MAX - 1)
-		+ this.getNormalizedValue(CardStack.CARDS_MAX - 2)
-		+ this.getNormalizedValue(CardStack.CARDS_MAX - 3);
-	protected byte[] dropColorIndex = new byte[CardStack.CARDS_MAX_COLOR];
+		+ this.getNormalizedCardRating(CardStack.CARDS_MAX - 1)
+		+ this.getNormalizedCardRating(CardStack.CARDS_MAX - 2)
+		+ this.getNormalizedCardRating(CardStack.CARDS_MAX - 3);
 
 	/** General function to rate a card based on it's color or value */
 	private int rateColorOrType(int card, byte[] cardsArray, int influence) {
@@ -104,7 +138,7 @@ public class DefaultPlayer extends AbstractPlayer {
 	    for (byte stackCard : cardsArray) {
 		if (DefaultPlayer.this.cardStack.hasCard(stackCard) == true) {
 		    same++;
-		    cardValue = cardValue + this.getNormalizedValue(card);
+		    cardValue = cardValue + this.getNormalizedCardRating(card);
 
 		    // modify rating if there are more cards
 		    cardValue = (same > 1) ? (cardValue + influence)
@@ -121,17 +155,22 @@ public class DefaultPlayer extends AbstractPlayer {
 			    .getCardsByColor(DefaultPlayer.this.cardStack.card
 				    .getColor(card)),
 		    CardRating.INFLUENCE_SAME_COLOR);
-	    return Rating.normalize(this.worth_max_by_color, cardValue);
+	    this.ratings[RATING_COLOR] = Rating.normalize(
+		    this.worth_max_by_color, cardValue);
+	    return this.ratings[RATING_COLOR];
 	}
 
 	protected double byColorFrequency(int card) {
 	    int maxValue = 0;
-	    for (byte value : this.dropColorIndex) {
+	    for (byte value : DefaultPlayer.this.dropColorIndex) {
 		maxValue = (value > maxValue) ? value : maxValue;
 	    }
-	    return Rating.normalize(maxValue,
-		    this.dropColorIndex[DefaultPlayer.this.cardStack.card
-			    .getColor(card)]);
+	    this.ratings[RATING_COLORFREQUENCY] = Rating
+		    .normalize(
+			    maxValue,
+			    DefaultPlayer.this.dropColorIndex[DefaultPlayer.this.cardStack.card
+				    .getColor(card)]);
+	    return this.ratings[RATING_COLORFREQUENCY];
 	}
 
 	/** Rate a card based on it's type and cards of the same type */
@@ -141,12 +180,16 @@ public class DefaultPlayer extends AbstractPlayer {
 			    .getCardsByType(DefaultPlayer.this.cardStack.card
 				    .getType(card)),
 		    CardRating.INFLUENCE_SAME_TYPE);
-	    return Rating.normalize(this.worth_max_by_type, cardValue);
+	    this.ratings[RATING_TYPE] = Rating.normalize(
+		    this.worth_max_by_type, cardValue);
+	    return this.ratings[RATING_TYPE];
 	}
 
 	/** Rate a card based on it's card value */
 	protected double byValue(int card) {
-	    return Rating.normalize(7, this.getRating(card));
+	    this.ratings[RATING_VALUE] = Rating.normalize(
+		    CardStack.CARDS_MAX_CARD - 1, this.getCardRating(card));
+	    return this.ratings[RATING_VALUE];
 	}
 
 	protected double byAvailability(int card) {
@@ -156,10 +199,11 @@ public class DefaultPlayer extends AbstractPlayer {
 			.getValue(stackCard) > maxValue ? DefaultPlayer.this.cardStackTable.card
 			.getValue(stackCard) : maxValue;
 	    }
-	    return Rating.normalize(
+	    this.ratings[RATING_AVAILABILITY] = Rating.normalize(
 		    DefaultPlayer.CardRating.INFLUENCE_DEFAULT_UNSEEN,
 		    maxValue,
 		    DefaultPlayer.this.cardStackTable.card.getValue(card));
+	    return this.ratings[RATING_AVAILABILITY];
 	}
 
 	/**
@@ -183,7 +227,7 @@ public class DefaultPlayer extends AbstractPlayer {
 	 * Get the rating for this card
 	 * 
 	 */
-	protected byte getRating(int card) {
+	protected byte getCardRating(int card) {
 	    CardStack.checkCard(card);
 	    if (card < CardStack.CARDS_MAX_CARD) {
 		return (byte) card;
@@ -192,8 +236,8 @@ public class DefaultPlayer extends AbstractPlayer {
 	}
 
 	/** Get a normalized value of a card */
-	protected int getNormalizedValue(int card) {
-	    int value = this.getRating(card);
+	protected int getNormalizedCardRating(int card) {
+	    int value = this.getCardRating(card);
 	    if (value > 2) {
 		// B, D, K -> 3; A -> 4
 		return value < 7 ? 3 : 4;
@@ -204,33 +248,106 @@ public class DefaultPlayer extends AbstractPlayer {
 	}
 
 	protected void reset() {
-	    this.dropColorIndex = new byte[CardStack.CARDS_MAX_COLOR];
+	    DefaultPlayer.this.dropColorIndex = new byte[CardStack.CARDS_MAX_COLOR];
 	}
 
 	protected void cardSeen(byte card) {
 	    DefaultPlayer.this.cardStackTable.card.add(card);
-	    this.dropColorIndex[DefaultPlayer.this.cardStack.card
-		    .getColor(card)] = (byte) (this.dropColorIndex[DefaultPlayer.this.cardStack.card
+	    DefaultPlayer.this.dropColorIndex[DefaultPlayer.this.cardStack.card
+		    .getColor(card)] = (byte) (DefaultPlayer.this.dropColorIndex[DefaultPlayer.this.cardStack.card
 		    .getColor(card)] + 1);
 	}
 
-	protected double byGoalDistance(byte card) {
-
-	    // TODO: rate type also!
+	protected double byGoalDistance(int card) {
+	    this.ratings[RATING_GOALDISTANCE] = 0;
 
 	    byte[] distances = DefaultPlayer.this.stackRating
 		    .goalDistance(DefaultPlayer.this.cardStack.getCards());
 
+	    // bad
 	    if (distances[1] == -1) {
-		return Rating.normalize(-1, 1, distances[1]);
+		this.ratings[RATING_GOALDISTANCE] = Rating.normalize(-1, 1,
+			distances[1]);
+		return this.ratings[RATING_GOALDISTANCE];
 	    }
 
-	    int color = DefaultPlayer.this.cardStack.card.getColor(card);
-	    if (distances[0] == color) {
-		return Rating.normalize(-1, 1, distances[1]);
+	    double colorValue = 0;
+	    double typeValue = 0;
+	    if (distances[0] == DefaultPlayer.this.cardStack.card
+		    .getColor(card)) {
+		colorValue = Rating.normalize(-1, 1, distances[1]);
+	    } else if (distances[2] == DefaultPlayer.this.cardStack.card
+		    .getType(card)) {
+		typeValue = Rating.normalize(-1, 1, distances[3]);
 	    }
 
-	    return 0;
+	    this.ratings[RATING_GOALDISTANCE] = (colorValue > typeValue) ? colorValue
+		    : typeValue;
+	    return this.ratings[RATING_GOALDISTANCE];
+	}
+
+	/**
+	 * Get the overall rating for all single ratings processed for a card
+	 * between two resets
+	 * 
+	 * @return
+	 */
+	protected double getOverallRating() {
+	    double overall = 0;
+	    int ratingCount = 0;
+	    for (int i = 0; i < this.ratings.length; i++) {
+		if (this.ratings[i] != RATING_DEFAULT) {
+		    ratingCount++;
+		    overall = overall + this.ratings[i];
+		}
+	    }
+	    return overall / ratingCount;
+	}
+
+	protected double getOverallRating(int card) {
+	    this.byColor(card);
+	    this.byColorFrequency(card);
+	    this.byGoalDistance(card);
+	    this.byType(card);
+	    this.byValue(card);
+	    return this.getOverallRating();
+	}
+
+	/**
+	 * Dump the rating currently stored for a card
+	 * 
+	 * @return
+	 */
+	protected String dumpRating() {
+	    StringBuffer ratingString = new StringBuffer();
+
+	    if (this.ratings[RATING_COLOR] != RATING_DEFAULT) {
+		ratingString.append(String.format(" color(%.2f)",
+			this.ratings[RATING_COLOR]));
+	    }
+	    if (this.ratings[RATING_TYPE] != RATING_DEFAULT) {
+		ratingString.append(String.format(" type(%.2f)",
+			this.ratings[RATING_TYPE]));
+	    }
+	    if (this.ratings[RATING_VALUE] != RATING_DEFAULT) {
+		ratingString.append(String.format(" value(%.2f)",
+			this.ratings[RATING_VALUE]));
+	    }
+	    if (this.ratings[RATING_AVAILABILITY] != RATING_DEFAULT) {
+		ratingString.append(String.format(" availability(%.2f)",
+			this.ratings[RATING_AVAILABILITY]));
+	    }
+	    if (this.ratings[RATING_COLORFREQUENCY] != RATING_DEFAULT) {
+		ratingString.append(String.format(" color-frequency(%.2f)",
+			this.ratings[RATING_COLORFREQUENCY]));
+	    }
+	    if (this.ratings[RATING_GOALDISTANCE] != RATING_DEFAULT) {
+		ratingString.append(String.format(" goal-distance(%.2f)",
+			this.ratings[RATING_GOALDISTANCE]));
+	    }
+
+	    return String.format("%.2f =%s", this.getOverallRating(),
+		    ratingString.toString());
 	}
     }
 
@@ -355,7 +472,7 @@ public class DefaultPlayer extends AbstractPlayer {
 			// calculate the real value here
 			currentValue = currentValue
 				+ DefaultPlayer.this.cardRating
-					.getNormalizedValue(card) + 7;
+					.getNormalizedCardRating(card) + 7;
 		    }
 		}
 
@@ -404,7 +521,7 @@ public class DefaultPlayer extends AbstractPlayer {
 			int cardToCheck = cardOffset + cardNum;
 			if (DefaultPlayer.this.cardStack.hasCard(cardToCheck) == false) {
 			    int ratingValue = DefaultPlayer.this.cardRating
-				    .getRating(cardToCheck)
+				    .getCardRating(cardToCheck)
 				    + (matches * CardRating.INFLUENCE_SAME_COLOR);
 			    DefaultPlayer.this.cardRating.uprate(
 				    DefaultPlayer.this.cardStackNeed,
@@ -428,7 +545,7 @@ public class DefaultPlayer extends AbstractPlayer {
 			// for matches
 			if (DefaultPlayer.this.cardStack.hasCard(ownedCard)) {
 			    typeChecked[DefaultPlayer.this.cardRating
-				    .getRating(cardNum)] = 1;
+				    .getCardRating(cardNum)] = 1;
 			    for (int i = cardsColor; i < CardStack.CARDS_MAX_COLOR; i++) {
 				int cardToCheck = cardNum + (i * cardOffset);
 				if ((cardToCheck != ownedCard)
@@ -473,11 +590,11 @@ public class DefaultPlayer extends AbstractPlayer {
 	Debug.println(this, "Deciding on my current card set: "
 		+ this.cardStack);
 
-	if (this.stackRating.byValue() < DefaultPlayer.STACk_DROP_TRESHOLD) {
+	if (this.stackRating.byValue() < this.behave_initialStackDropThreshold) {
 	    // drop immediately if blow threshold
 	    Debug.println(this, String.format(
 		    "Dropping (below threshold (%d))",
-		    DefaultPlayer.STACk_DROP_TRESHOLD));
+		    this.behave_initialStackDropThreshold));
 
 	    this.log("Uhm... no!");
 	    return false;
@@ -492,32 +609,18 @@ public class DefaultPlayer extends AbstractPlayer {
      * into the needed cards array (as negative values) to save some space.
      */
     private void rateCards() {
+	double[] ratings = new double[6];
+
 	Debug.println(this, "Rating my current cards..");
 	for (byte card : this.cardStack.getCards()) {
-	    double ratingColor = this.cardRating.byColor(card);
-	    double ratingType = this.cardRating.byType(card);
-	    double ratingValue = this.cardRating.byValue(card);
-	    double ratingAvailability = this.cardRating.byAvailability(card);
-	    double ratingColorFrequency = this.cardRating
-		    .byColorFrequency(card);
-	    double ratingGoalDistance = this.cardRating.byGoalDistance(card);
-
-	    int ratings = 6;
-	    double overallRating = (ratingColor + ratingType + ratingValue
-		    + ratingColorFrequency + ratingAvailability + ratingGoalDistance)
-		    / ratings;
-	    this.cardStackNeed.card.setValue(card, (byte) (overallRating * -1));
-
-	    Debug.print(
-		    this,
-		    true,
-		    String.format(
-			    " %s: color(%2.2f) type(%2.2f) value(%2.2f) avail(%2.2f) colorFreq(%2.2f) distance(%2.2f)= %2.2f",
-			    this.cardStack.card.toString(card), ratingColor,
-			    ratingType, ratingValue, ratingAvailability,
-			    ratingColorFrequency, ratingGoalDistance,
-			    overallRating));
-	    Debug.nl();
+	    this.cardRating = new CardRating();
+	    this.cardStackNeed.card.setValue(card,
+		    (byte) this.cardRating.getOverallRating(card));
+	    if (Debug.debug) {
+		Debug.println(this, String.format("Rating %-5s: %s",
+			this.cardStack.card.toString(card),
+			this.cardRating.dumpRating()));
+	    }
 	}
     }
 
