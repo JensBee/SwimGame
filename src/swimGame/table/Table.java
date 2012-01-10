@@ -3,7 +3,9 @@ package swimGame.table;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Formatter;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
 import swimGame.out.Console;
 import swimGame.out.Debug;
@@ -83,9 +85,12 @@ public class Table {
     private class Player {
 	/** List of players joined this table */
 	private final ArrayList<IPlayer> list = new ArrayList<IPlayer>();
+	// TODO: combine this with the existing player list
+	private final Map<IPlayer, Double> points = new HashMap<IPlayer, Double>();
 
 	protected void add(IPlayer player) {
 	    this.list.add(player);
+	    this.points.put(player, new Double(0));
 	}
 
 	protected IPlayer get(int index) {
@@ -96,6 +101,14 @@ public class Table {
 	/** Get a new iterator */
 	protected PlayerIterator iterator(boolean wrapAround) {
 	    return new PlayerIterator(wrapAround);
+	}
+
+	protected void addPoints(IPlayer player, Double pointsToAdd) {
+	    this.points.put(player, this.points.get(player) + pointsToAdd);
+	}
+
+	protected double getPoints(IPlayer player) {
+	    return this.points.get(player);
 	}
 
 	protected int size() {
@@ -130,13 +143,6 @@ public class Table {
 		    if ((this.pointer + 1) == this.closingPointer) {
 			return false;
 		    }
-		    return true;
-		}
-		return false;
-	    }
-
-	    protected boolean nextIsClosing() {
-		if ((this.pointer + 1) == this.closingPointer) {
 		    return true;
 		}
 		return false;
@@ -629,8 +635,12 @@ public class Table {
 			playerName);
 	    } else {
 		CardStack playerCardStack = new CardStack(playerCards);
-		this.logWriter.write(" %s's cards: %s value: %.0f", playerName,
-			playerCardStack.toString(), playerCardStack.getValue());
+		this.player.addPoints(player, playerCardStack.getValue());
+		this.logWriter.write(
+			" %s's cards: %s value: %.0f overall: %.0f",
+			playerName, playerCardStack.toString(),
+			playerCardStack.getValue(),
+			this.player.getPoints(player));
 	    }
 	}
     }
