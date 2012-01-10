@@ -39,12 +39,14 @@ public class SwimGame {
 		"print (a lot) of debugging messages"));
 	Console.println(SwimGame.formatHelpString("--max-rounds n",
 		"maximum number of rounds to play before intercepting"));
+	Console.println(SwimGame.formatHelpString("--paused",
+		"add n players (2 to 9 players are allowed)"));
 	Console.println(SwimGame.formatHelpString("--player n",
 		"add n players (2 to 9 players are allowed)"));
 	Console.println(SwimGame.formatHelpString("--human",
 		"add one slot for a human player)"));
-	Console.println(SwimGame.formatHelpString("--paused",
-		"add n players (2 to 9 players are allowed)"));
+	Console.println(SwimGame.formatHelpString("--plays",
+		"play n rounds of the game"));
 	Console.nl();
 	Console.println(SwimGame.formatHelpString("--help", "show this help"));
     }
@@ -56,6 +58,7 @@ public class SwimGame {
 	int numberOfPLayers = 3;
 	// max rounds to play till the table intercepts
 	Table.MAX_ROUNDS = 32;
+	int numberOfRounds = 1;
 
 	Console.println("SWIMMING.GAME.O°o°O°o.\nv" + SwimGame.version
 		+ ", 2011 Jens Bertram <code@jens-bertram.net>\n");
@@ -87,6 +90,13 @@ public class SwimGame {
 		    SwimGame.exitWithError("No value for parameter --max-rounds given.");
 		}
 		break;
+	    case "--plays":
+		if (i < args.length) {
+		    numberOfRounds = Integer.parseInt(args[i++]);
+		} else {
+		    SwimGame.exitWithError("No value for parameter --plays given.");
+		}
+		break;
 	    case "--noask":
 		Console.ask = false;
 		break;
@@ -115,7 +125,7 @@ public class SwimGame {
 	Console.nl();
 
 	// table
-	SwimGame.table = new Table();
+	SwimGame.table = new Table(numberOfRounds);
 
 	// try add some players
 	try {
@@ -135,7 +145,7 @@ public class SwimGame {
 	}
 
 	try {
-	    SwimGame.table.startGame();
+	    SwimGame.table.start();
 	} catch (final Exception e) {
 	    SwimGame.exitWithError(e);
 	}

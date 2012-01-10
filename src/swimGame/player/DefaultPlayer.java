@@ -33,9 +33,16 @@ public class DefaultPlayer extends AbstractPlayer {
 
     // --- behavior defaults
     // below witch value should we drop an initial card stack immediately?
-    private final int behave_initialStackDropThreshold = 20;
+    private static final int BEHAVE_STACK_DROP_INITIAL_THRESHOLD = 20;
     // when to consider dropping the stack
-    private final int behave_stackDropThreshold = 20;
+    private static final int BEHAVE_STACK_DROP_THRESHOLD = 20;
+    // drop a card, even if one of three is missing, if it's rating is over..
+    private static final int BEHAVE_FORCE_DROP_TYPEGOAL = 20;
+    // wait for a third card if current rating is below..
+    private static final int BEHAVE_WAIT_FOR_TYPE_THRESHOLD = 21;
+
+    // --- player model variables (between 1-3, low to high)
+    private final int playerModel_risk = 3;// new Random().nextInt(3) + 1;
 
     // nested classes
     private CardRating cardRating = null;
@@ -46,17 +53,13 @@ public class DefaultPlayer extends AbstractPlayer {
 	this.cardStackNeed = new CardStack();
 	this.cardStackTable
 		.fill((byte) DefaultPlayer.CardRating.INFLUENCE_DEFAULT_UNSEEN);
-	this.dropColorIndex = new byte[CardStack.CARDS_MAX_COLOR];
+	for (int i = 0; i < this.dropColorIndex.length; i++) {
+	    this.dropColorIndex[i] = 0;
+	}
 	this.gameRound = 0;
 	if (this.cardRating != null) {
 	    this.cardRating.reset();
 	}
-    }
-
-    /** Constructor */
-    public DefaultPlayer() {
-	super();
-	this.initialize();
     }
 
     /**
@@ -165,11 +168,16 @@ public class DefaultPlayer extends AbstractPlayer {
 	    for (byte value : DefaultPlayer.this.dropColorIndex) {
 		maxValue = (value > maxValue) ? value : maxValue;
 	    }
-	    this.ratings[RATING_COLORFREQUENCY] = Rating
-		    .normalize(
-			    maxValue,
-			    DefaultPlayer.this.dropColorIndex[DefaultPlayer.this.cardStack.card
-				    .getColor(card)]);
+
+	    if (maxValue != 0) {
+		this.ratings[RATING_COLORFREQUENCY] = Rating
+			.normalize(
+				maxValue,
+				DefaultPlayer.this.dropColorIndex[DefaultPlayer.this.cardStack.card
+					.getColor(card)]);
+	    } else {
+		this.ratings[RATING_COLORFREQUENCY] = 0;
+	    }
 	    return this.ratings[RATING_COLORFREQUENCY];
 	}
 
@@ -305,6 +313,7 @@ public class DefaultPlayer extends AbstractPlayer {
 	}
 
 	protected double getOverallRating(int card) {
+	    this.byAvailability(card);
 	    this.byColor(card);
 	    this.byColorFrequency(card);
 	    this.byGoalDistance(card);
@@ -360,11 +369,31 @@ public class DefaultPlayer extends AbstractPlayer {
     private class StackRating {
 	protected static final int NO_RESULT = -1;
 
+	protected byte[] getCardsByValue(CardStack cardStack) {
+	    byte[] rating = new byte[CardStack.CARDS_MAX_CARD
+		    * CardStack.CARDS_MAX_COLOR];
+	    int ratingIndex = 0;
+
+	    // TODO: replace this dumb brute-force attempt, though it's quite
+	    // fast
+	    byte[] cardStackArray = cardStack.asArray();
+	    for (int i = -128; i < 127; i++) {
+		for (int j = 0; j < cardStackArray.length; j++) {
+		    if (cardStackArray[j] == i) {
+			rating[ratingIndex++] = (byte) j;
+		    }
+		}
+	    }
+
+	    return rating;
+	}
+
 	/**
 	 * Check, how many cards are missing to reach a goal state. No
 	 * calculation of values is involved here
 	 * 
 	 * @return How many cards are missing to reach a goal state
+	 *         [color][steps][type][steps]
 	 */
 	protected byte[] goalDistance(byte[] cards) {
 	    byte positionColor;
@@ -419,6 +448,8 @@ public class DefaultPlayer extends AbstractPlayer {
 		distances[3] = (byte) (valueType - 1);
 	    }
 
+	    // Debug.println("Distances ------c" + distances[0] + " v"
+	    // + distances[1] + " t" + distances[2] + " v" + distances[3]);
 	    return distances;
 	}
 
@@ -435,15 +466,16 @@ public class DefaultPlayer extends AbstractPlayer {
 	    CardIterator sI = DefaultPlayer.this.cardStack.new CardIterator();
 
 	    double value = 0;
+	    int sameType = 0;
 	    while (sI.hasNext()) {
-		int sameType = 0;
+		sameType = 0;
 		double currentValue = 0;
 		// skip if we don't own this card
 		if (sI.next() == CardStack.FLAG_NO_CARD) {
 		    continue;
 		}
 
-		// do we have the same card with another color?
+		// do we have the same card type?
 		for (byte b : DefaultPlayer.this.cardStack.getCardsByType(sI
 			.getCardType())) {
 		    if (b == CardStack.FLAG_HAS_CARD) {
@@ -452,31 +484,35 @@ public class DefaultPlayer extends AbstractPlayer {
 		}
 
 		// same type in three colors is fixed value
-		if (sameType == 3) {
-		    value = Table.WORTH_THREE_OF_SAME_TYPE;
-		    break;
-		} else if (sameType == 2) {
-		    // we only missing one card of our type
-		    // TODO: better decide on players "model" if he want's to
-		    // take
-		    // this route
-		    Debug.println("--> shortening decision [FIXME!]");
-		    value = (Table.WORTH_THREE_OF_SAME_TYPE / 3) * 2;
-		    break;
+		if (sameType >= 3) {
+		    return Table.WORTH_THREE_OF_SAME_TYPE;
 		}
 
-		// do we have another card in this row/of the same type?
+		// do we have another card of the same color?
 		for (byte card : DefaultPlayer.this.cardStack
 			.getCardsByColor(sI.getCardColor())) {
 		    if (DefaultPlayer.this.cardStack.hasCard(card)) {
 			// calculate the real value here
 			currentValue = currentValue
 				+ DefaultPlayer.this.cardRating
-					.getNormalizedCardRating(card) + 7;
+					.getNormalizedCardRating(card)
+				+ (CardStack.CARDS_MAX_CARD - 1);
 		    }
 		}
 
 		value = (currentValue > value) ? currentValue : value;
+	    }
+
+	    if ((sameType == 2) && (DefaultPlayer.this.playerModel_risk >= 2)) {
+		// MODEL:risk drop for three of same type
+		Debug.println(DefaultPlayer.this,
+			"#MODEL:risk Waiting for third card.");
+		if (value < BEHAVE_WAIT_FOR_TYPE_THRESHOLD) {
+		    value = (Table.WORTH_THREE_OF_SAME_TYPE / 3) * 2;
+		} else if (DefaultPlayer.this.playerModel_risk > 2) {
+		    Debug.println(DefaultPlayer.this,
+			    "#MODEL:risk Waiting for third card, even threshold looks good.");
+		}
 	    }
 
 	    if (Debug.debug == true) {
@@ -590,11 +626,11 @@ public class DefaultPlayer extends AbstractPlayer {
 	Debug.println(this, "Deciding on my current card set: "
 		+ this.cardStack);
 
-	if (this.stackRating.byValue() < this.behave_initialStackDropThreshold) {
+	if (this.stackRating.byValue() < DefaultPlayer.BEHAVE_STACK_DROP_INITIAL_THRESHOLD) {
 	    // drop immediately if blow threshold
 	    Debug.println(this, String.format(
 		    "Dropping (below threshold (%d))",
-		    this.behave_initialStackDropThreshold));
+		    DefaultPlayer.BEHAVE_STACK_DROP_INITIAL_THRESHOLD));
 
 	    this.log("Uhm... no!");
 	    return false;
@@ -609,8 +645,6 @@ public class DefaultPlayer extends AbstractPlayer {
      * into the needed cards array (as negative values) to save some space.
      */
     private void rateCards() {
-	double[] ratings = new double[6];
-
 	Debug.println(this, "Rating my current cards..");
 	for (byte card : this.cardStack.getCards()) {
 	    this.cardRating = new CardRating();
@@ -624,7 +658,15 @@ public class DefaultPlayer extends AbstractPlayer {
 	}
     }
 
-    /** Sort a card triple by values in the given stack */
+    /**
+     * Sort a triple of cards according to values in a stack
+     * 
+     * @param stack
+     *            The stack to get the card values from
+     * @param triple
+     *            Array containing the card-indices for the cards to sort
+     * @return The input array sorted by card-values
+     */
     private byte[] sortCardTriple(CardStack stack, byte[] triple) {
 	byte[] sortedTriple = new byte[] { CardStack.FLAG_UNINITIALIZED,
 		CardStack.FLAG_UNINITIALIZED, CardStack.FLAG_UNINITIALIZED };
@@ -697,9 +739,9 @@ public class DefaultPlayer extends AbstractPlayer {
 	}
 
 	// estimate goal distance
+	byte[] goalDistance = this.stackRating.goalDistance(this.cardStack
+		.getCards());
 	if (Debug.debug == true) {
-	    byte[] goalDistance = this.stackRating.goalDistance(this.cardStack
-		    .getCards());
 	    if ((goalDistance[0] != -1) || (goalDistance[2] != -1)) {
 		Debug.print(this, "Goal distance(s): ");
 		if (goalDistance[0] > -1) {
@@ -718,33 +760,54 @@ public class DefaultPlayer extends AbstractPlayer {
 	    }
 	}
 
+	// stack value
+	dropValue = this.stackRating.dropValue(this.cardStack.getCards());
+
 	// make a drop suggestion
 	byte[] cardToDrop = new byte[] { CardStack.FLAG_UNINITIALIZED,
 		CardStack.FLAG_UNINITIALIZED };
+
+	cardToDrop[1] = 127; // make sure all cards will be lower
 	for (byte card : this.cardStack.getCards()) {
-	    // be careful, card ratings are still noted as negative values here
 	    byte cardValue = this.cardStackNeed.card.getValue(card);
-	    if ((cardValue == 0) || (cardToDrop[1] == -1)
-		    || (cardValue > cardToDrop[1])) {
+	    if ((cardValue == -1) || (cardValue < cardToDrop[1])) {
+		// MODEL:risk wait for third card type
+		if ((this.cardStack.card.getType(card) == goalDistance[2])) {
+		    if ((this.playerModel_risk >= 2)
+			    && (dropValue < BEHAVE_WAIT_FOR_TYPE_THRESHOLD)) {
+			Debug.println(this,
+				"#MODEL:risk Waiting for third card.");
+			continue;
+		    } else if (this.playerModel_risk > 2) {
+			Debug.println(this,
+				"#MODEL:risk Waiting for third card, event threshold is good.");
+		    } else {
+			Debug.println(this,
+				"#MODEL:risk Skipping wait for third card.");
+		    }
+		}
 		cardToDrop[0] = card;
 		cardToDrop[1] = cardValue;
 	    }
 	}
 
 	// end game?
-	dropValue = this.stackRating.dropValue(this.cardStack.getCards());
 	if ((this.gameIsClosed == false) && (dropValue > StackRating.NO_RESULT)) {
 	    this.log("*knock!, knock!*");
 	    SwimGame.getTable().interact(Table.Action.END_CALL,
 		    this.cardStack.getCards());
 	} else {
-	    // drop & pick
-	    if (SwimGame.getTable().interact(Table.Action.DROP_CARD,
-		    cardToDrop[0])
-		    && SwimGame.getTable().interact(Table.Action.PICK_CARD,
-			    this.cardsTableTriple[0])) {
-		this.cardStack.card.remove(cardToDrop[0]);
-		this.cardStack.card.add(this.cardsTableTriple[0]);
+	    if (cardToDrop[0] == -1) {
+		// TODO: evaluate skip action
+	    } else {
+		// drop & pick
+		if (SwimGame.getTable().interact(Table.Action.DROP_CARD,
+			cardToDrop[0])
+			&& SwimGame.getTable().interact(Table.Action.PICK_CARD,
+				this.cardsTableTriple[0])) {
+		    this.cardStack.card.remove(cardToDrop[0]);
+		    this.cardStack.card.add(this.cardsTableTriple[0]);
+		}
 	    }
 	}
 	// finished
