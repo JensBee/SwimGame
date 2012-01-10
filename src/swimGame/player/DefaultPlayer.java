@@ -1,6 +1,5 @@
 package swimGame.player;
 
-import swimGame.SwimGame;
 import swimGame.out.Debug;
 import swimGame.table.CardStack;
 import swimGame.table.CardStack.CardIterator;
@@ -47,6 +46,10 @@ public class DefaultPlayer extends AbstractPlayer {
     // nested classes
     private CardRating cardRating = null;
     private final StackRating stackRating = new StackRating();
+
+    public DefaultPlayer(Table table) {
+	super(table);
+    }
 
     private void initialize() {
 	this.cardStackTable = new CardStack();
@@ -369,24 +372,24 @@ public class DefaultPlayer extends AbstractPlayer {
     private class StackRating {
 	protected static final int NO_RESULT = -1;
 
-	protected byte[] getCardsByValue(CardStack cardStack) {
-	    byte[] rating = new byte[CardStack.CARDS_MAX_CARD
-		    * CardStack.CARDS_MAX_COLOR];
-	    int ratingIndex = 0;
-
-	    // TODO: replace this dumb brute-force attempt, though it's quite
-	    // fast
-	    byte[] cardStackArray = cardStack.asArray();
-	    for (int i = -128; i < 127; i++) {
-		for (int j = 0; j < cardStackArray.length; j++) {
-		    if (cardStackArray[j] == i) {
-			rating[ratingIndex++] = (byte) j;
-		    }
-		}
-	    }
-
-	    return rating;
-	}
+	// protected byte[] getCardsByValue(CardStack cardStack) {
+	// byte[] rating = new byte[CardStack.CARDS_MAX_CARD
+	// * CardStack.CARDS_MAX_COLOR];
+	// int ratingIndex = 0;
+	//
+	// // TODO: replace this dumb brute-force attempt, though it's quite
+	// // fast
+	// byte[] cardStackArray = cardStack.asArray();
+	// for (int i = -128; i < 127; i++) {
+	// for (int j = 0; j < cardStackArray.length; j++) {
+	// if (cardStackArray[j] == i) {
+	// rating[ratingIndex++] = (byte) j;
+	// }
+	// }
+	// }
+	//
+	// return rating;
+	// }
 
 	/**
 	 * Check, how many cards are missing to reach a goal state. No
@@ -445,11 +448,8 @@ public class DefaultPlayer extends AbstractPlayer {
 	    }
 	    if (valueType >= 2) {
 		distances[2] = positionType;
-		distances[3] = (byte) (valueType - 1);
+		distances[3] = (byte) (Table.RULE_GOAL_CARDS_BY_TYPE - valueType);
 	    }
-
-	    // Debug.println("Distances ------c" + distances[0] + " v"
-	    // + distances[1] + " t" + distances[2] + " v" + distances[3]);
 	    return distances;
 	}
 
@@ -467,6 +467,7 @@ public class DefaultPlayer extends AbstractPlayer {
 
 	    double value = 0;
 	    int sameType = 0;
+
 	    while (sI.hasNext()) {
 		sameType = 0;
 		double currentValue = 0;
@@ -478,7 +479,7 @@ public class DefaultPlayer extends AbstractPlayer {
 		// do we have the same card type?
 		for (byte b : DefaultPlayer.this.cardStack.getCardsByType(sI
 			.getCardType())) {
-		    if (b == CardStack.FLAG_HAS_CARD) {
+		    if (DefaultPlayer.this.cardStack.card.getValue(b) == CardStack.FLAG_HAS_CARD) {
 			sameType++;
 		    }
 		}
@@ -762,6 +763,7 @@ public class DefaultPlayer extends AbstractPlayer {
 
 	// stack value
 	dropValue = this.stackRating.dropValue(this.cardStack.getCards());
+	Debug.println(this, "Drop value: " + dropValue);
 
 	// make a drop suggestion
 	byte[] cardToDrop = new byte[] { CardStack.FLAG_UNINITIALIZED,
@@ -771,8 +773,9 @@ public class DefaultPlayer extends AbstractPlayer {
 	for (byte card : this.cardStack.getCards()) {
 	    byte cardValue = this.cardStackNeed.card.getValue(card);
 	    if ((cardValue == -1) || (cardValue < cardToDrop[1])) {
-		// MODEL:risk wait for third card type
-		if ((this.cardStack.card.getType(card) == goalDistance[2])) {
+		// MODEL:risk wait for third card type?
+		if ((this.cardStack.card.getType(card) == goalDistance[2])
+			&& (goalDistance[3] > 0)) {
 		    if ((this.playerModel_risk >= 2)
 			    && (dropValue < BEHAVE_WAIT_FOR_TYPE_THRESHOLD)) {
 			Debug.println(this,
@@ -794,16 +797,15 @@ public class DefaultPlayer extends AbstractPlayer {
 	// end game?
 	if ((this.gameIsClosed == false) && (dropValue > StackRating.NO_RESULT)) {
 	    this.log("*knock!, knock!*");
-	    SwimGame.getTable().interact(Table.Action.END_CALL,
+	    this.table.interact(Table.Action.END_CALL,
 		    this.cardStack.getCards());
 	} else {
 	    if (cardToDrop[0] == -1) {
 		// TODO: evaluate skip action
 	    } else {
 		// drop & pick
-		if (SwimGame.getTable().interact(Table.Action.DROP_CARD,
-			cardToDrop[0])
-			&& SwimGame.getTable().interact(Table.Action.PICK_CARD,
+		if (this.table.interact(Table.Action.DROP_CARD, cardToDrop[0])
+			&& this.table.interact(Table.Action.PICK_CARD,
 				this.cardsTableTriple[0])) {
 		    this.cardStack.card.remove(cardToDrop[0]);
 		    this.cardStack.card.add(this.cardsTableTriple[0]);
@@ -812,7 +814,7 @@ public class DefaultPlayer extends AbstractPlayer {
 	}
 	// finished
 	this.gameRound++;
-	SwimGame.getTable().interact(Table.Action.MOVE_FINISHED);
+	this.table.interact(Table.Action.MOVE_FINISHED);
     }
 
     @Override

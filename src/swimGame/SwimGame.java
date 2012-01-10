@@ -6,8 +6,6 @@ import swimGame.player.HumanPlayer;
 import swimGame.table.Table;
 
 public class SwimGame {
-    // The game playing table
-    private static Table table;
     private static final double version = 0.1;
     private static boolean humanPlayer = false;
 
@@ -21,11 +19,6 @@ public class SwimGame {
     private static void exitWithError(String message) {
 	System.err.println(message);
 	System.exit(1);
-    }
-
-    /** Get the current playing table */
-    public static Table getTable() {
-	return SwimGame.table;
     }
 
     private static String formatHelpString(String option, String description) {
@@ -58,6 +51,9 @@ public class SwimGame {
 	int numberOfPLayers = 3;
 	// max rounds to play till the table intercepts
 	Table.MAX_ROUNDS = 32;
+	// game playing table
+	Table table;
+	// default rounds to play
 	int numberOfRounds = 1;
 
 	Console.println("SWIMMING.GAME.O°o°O°o.\nv" + SwimGame.version
@@ -124,20 +120,19 @@ public class SwimGame {
 			Table.MAX_ROUNDS));
 	Console.nl();
 
-	// table
-	SwimGame.table = new Table(numberOfRounds);
+	table = new Table(numberOfRounds);
 
 	// try add some players
 	try {
 	    if (humanPlayer) {
 		if (numberOfPLayers == Table.MAX_PLAYER) {
 		    Console.println("WARN: Removed one player to get a slot for the human player");
-		    SwimGame.table.addPlayers(numberOfPLayers - 1);
+		    table.addPlayers(numberOfPLayers - 1);
 		}
-		SwimGame.table.addPlayers(numberOfPLayers);
-		SwimGame.table.addPlayer(new HumanPlayer());
+		table.addPlayers(numberOfPLayers);
+		table.addPlayer(new HumanPlayer(table));
 	    } else {
-		SwimGame.table.addPlayers(numberOfPLayers);
+		table.addPlayers(numberOfPLayers);
 	    }
 	} catch (final Exception e) {
 	    // TODO Auto-generated catch block
@@ -145,7 +140,7 @@ public class SwimGame {
 	}
 
 	try {
-	    SwimGame.table.start();
+	    table.start();
 	} catch (final Exception e) {
 	    SwimGame.exitWithError(e);
 	}

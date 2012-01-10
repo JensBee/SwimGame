@@ -18,14 +18,12 @@ import swimGame.table.Table;
  * 
  */
 abstract class AbstractPlayer implements IPlayer {
-    /**
-     * The name of this player
-     */
+    /** The name of this player */
     protected String name;
-    /**
-     * Holds a list of predefined player names
-     */
+    /** Holds a list of predefined player names */
     private static ArrayList<String> nameList;
+    /** Reference to the table we're playing on */
+    protected Table table;
     // one random generator for all players
     private static Random random;
     /** Cards owned by this player */
@@ -69,7 +67,8 @@ abstract class AbstractPlayer implements IPlayer {
     /**
      * Empty constructor
      */
-    public AbstractPlayer() {
+    public AbstractPlayer(Table table) {
+	this.table = table;
 	this.initNames();
 	// get a random name
 	this.name = AbstractPlayer.nameList.remove(AbstractPlayer.random
@@ -82,7 +81,8 @@ abstract class AbstractPlayer implements IPlayer {
      * @param name
      *            The name of this player
      */
-    public AbstractPlayer(final String name) {
+    public AbstractPlayer(Table table, final String name) {
+	this.table = table;
 	this.name = name;
     }
 

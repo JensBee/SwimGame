@@ -32,6 +32,8 @@ public class Table {
     public static boolean pauseAfterRound = false;
     // has current player performed an action before continuing?
     boolean playerHasTakenAnAction = false;
+    // how many cards needed by type to be in goal state?
+    public static final int RULE_GOAL_CARDS_BY_TYPE = 3;
 
     // nested classes
     private final Game game;
@@ -524,7 +526,7 @@ public class Table {
      */
     public void addPlayers(final int amount) throws Exception {
 	for (int i = 0; i < amount; i++) {
-	    this.addPlayer(new DefaultPlayer());
+	    this.addPlayer(new DefaultPlayer(this));
 	}
     }
 

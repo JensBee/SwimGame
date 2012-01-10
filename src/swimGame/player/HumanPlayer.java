@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-import swimGame.SwimGame;
 import swimGame.out.Console;
 import swimGame.out.Debug;
 import swimGame.table.CardStack;
@@ -13,7 +12,8 @@ import swimGame.table.Table;
 public class HumanPlayer extends AbstractPlayer {
     private static final String CARDS_FORMATSTRING = "%5s %9s";
 
-    public HumanPlayer() {
+    public HumanPlayer(Table table) {
+	super(table);
 	this.name = "Human";
     }
 
@@ -58,7 +58,7 @@ public class HumanPlayer extends AbstractPlayer {
 		    .getKey("Press (1-3) to drop a card, [c] to close, [s] to skip..");
 	    switch (key) {
 	    case 'c':
-		if (SwimGame.getTable().interact(Table.Action.END_CALL,
+		if (this.table.interact(Table.Action.END_CALL,
 			this.cardStack.getCards())) {
 		    returnCode = -1;
 		    input = true;
@@ -67,7 +67,7 @@ public class HumanPlayer extends AbstractPlayer {
 		}
 		break;
 	    case 's':
-		SwimGame.getTable().interact(Table.Action.MOVE_FINISHED);
+		this.table.interact(Table.Action.MOVE_FINISHED);
 		returnCode = -1;
 		input = true;
 		break;
@@ -136,9 +136,9 @@ public class HumanPlayer extends AbstractPlayer {
 	    if ((cardToDrop >= 0) && (cardToDrop <= 3) && (cardToPick >= 0)
 		    && (cardToPick <= 4)) {
 		// drop & pick
-		if (SwimGame.getTable().interact(Table.Action.DROP_CARD,
+		if (this.table.interact(Table.Action.DROP_CARD,
 			this.cardStack.getCards()[cardToDrop])
-			&& SwimGame.getTable().interact(Table.Action.PICK_CARD,
+			&& this.table.interact(Table.Action.PICK_CARD,
 				tableCards[cardToPick])) {
 		    this.cardStack.card
 			    .remove(this.cardStack.getCards()[cardToDrop]);
@@ -147,6 +147,6 @@ public class HumanPlayer extends AbstractPlayer {
 	    }
 	}
 
-	SwimGame.getTable().interact(Table.Action.MOVE_FINISHED);
+	this.table.interact(Table.Action.MOVE_FINISHED);
     }
 }

@@ -8,6 +8,16 @@ import java.util.Random;
  * A card stack as part of the game. This is initially the full set of cards
  * available in the game.
  * 
+ * <pre>
+ * The CardStack byte array as reference:
+ * 
+ *    7  8  9 10  J  Q  K  A
+ * ♦ 00 01 02 03 04 05 06 07
+ * ♥ 08 09 10 11 12 13 14 15
+ * ♠ 16 17 18 19 20 21 22 23
+ * ♣ 24 25 26 27 28 29 30 31
+ * </pre>
+ * 
  * @author Jens Bertram <code@jens-bertram.net>
  * 
  */
