@@ -3,9 +3,7 @@ package swimGame.table;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Formatter;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 
 import swimGame.out.Console;
 import swimGame.out.Debug;
@@ -88,11 +86,10 @@ public class Table {
 	/** List of players joined this table */
 	private final ArrayList<IPlayer> list = new ArrayList<IPlayer>();
 	// TODO: combine this with the existing player list
-	private final Map<IPlayer, Double> points = new HashMap<IPlayer, Double>();
+	private final double[] points = new double[9];
 
 	protected void add(IPlayer player) {
 	    this.list.add(player);
-	    this.points.put(player, new Double(0));
 	}
 
 	protected IPlayer get(int index) {
@@ -106,11 +103,13 @@ public class Table {
 	}
 
 	protected void addPoints(IPlayer player, Double pointsToAdd) {
-	    this.points.put(player, this.points.get(player) + pointsToAdd);
+	    double currentPoints = this.points[this.list.indexOf(player)];
+	    this.points[this.list.indexOf(player)] = currentPoints
+		    + pointsToAdd;
 	}
 
 	protected double getPoints(IPlayer player) {
-	    return this.points.get(player);
+	    return this.points[this.list.indexOf(player)];
 	}
 
 	protected int size() {
