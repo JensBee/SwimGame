@@ -441,7 +441,6 @@ public class CardStack {
 	    if (count == 3) {
 		return Table.WORTH_THREE_OF_SAME_TYPE;
 	    }
-	    value = (newValue > value) ? newValue : value;
 	}
 
 	return value;
