@@ -50,9 +50,6 @@ public class SwimGame {
      */
     public static void main(final String[] args) {
 	int numberOfPLayers = 3;
-	// max rounds to play till the table intercepts
-	// TODO: set max rounds
-	// Table.MAX_ROUNDS = 32;
 	// game playing table
 	DefaultTable table;
 	// default rounds to play

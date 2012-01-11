@@ -89,8 +89,10 @@ public class DefaultTable extends AbstractTable {
     /** Generate a simple rating for all players */
     private void generateRating() {
 	Console.nl();
-	this.logWriter.write("Player-rating:");
-	for (IPlayer player : this.tableLogic.player.list) {
+	byte rank;
+
+	this.logWriter.write("Player game-rating:");
+	for (IPlayer player : this.tableLogic.player.list.keySet()) {
 	    byte[] playerCards = player.getCards();
 	    String playerName = (this.tableLogic.game.round.hasClosed(player)) ? "* "
 		    + player.toString()
@@ -109,14 +111,28 @@ public class DefaultTable extends AbstractTable {
 			this.tableLogic.player.getPoints(player));
 	    }
 	}
+
+	this.logWriter.write("Player overall-rating:");
+	rank = 1;
+	for (IPlayer player : this.tableLogic.player.getRanked().keySet()) {
+	    this.logWriter
+		    .write(String.format("%d. %s with %.0f", rank,
+			    player.toString(),
+			    this.tableLogic.player.list.get(player)));
+	    rank++;
+	}
     }
 
     @Override
     public void handleTableLogicEvent(Action action, Object data) {
 	switch (action) {
 	case DROP_CARD:
-	    this.logWriter.write("%s dropped %s", this.currentPlayer,
+	    this.logWriter.player("dropped %s",
 		    this.cardStack.card.toString((byte) data));
+	    break;
+	case DROP_CARDSTACK_INITIAL:
+	    this.logWriter.player("drops the initial card set: %s",
+		    new CardStack((byte[]) data).toString());
 	    break;
 	case END_CALL:
 	    this.logWriter.player("is closing. Last call!");

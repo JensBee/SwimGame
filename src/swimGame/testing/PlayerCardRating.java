@@ -9,9 +9,7 @@ import swimGame.table.TableLogic;
 public class PlayerCardRating {
 
     /**
-     * [Table] Alice's cards: [♥J][♣J][♣K] value: 20 overall: 20 [Table] Oscar's
-     * cards: [♥A][♠K][♠A] value: 21 overall: 21 [Table] * Eve's cards:
-     * [♦Q][♥Q][♣Q] value: 10 overall: 10
+     * Test rating a fixed card set
      * 
      * @param args
      */

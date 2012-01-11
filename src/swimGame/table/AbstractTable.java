@@ -62,42 +62,33 @@ public abstract class AbstractTable implements ITable {
 	}
     }
 
-    /**
-     * @see TableLogic.Table#addPlayer(IPlayer)
-     */
+    @Override
     public void addPlayer(IPlayer player) throws Exception {
 	this.tableLogic.table.addPlayer(player);
     }
 
-    /**
-     * @see TableLogic.Table#addPlayers(int)
-     */
+    @Override
     public void addPlayers(final int amount) throws Exception {
 	this.tableLogic.table.addPlayers(amount);
     }
 
     /** Get the logic for this table controller */
+    @Override
     public TableLogic getLogic() {
 	return this.tableLogic;
     }
 
-    /** Get the game started */
+    @Override
     public void start() {
 	this.tableLogic.player.fireEvent(TableLogic.Event.GAME_START);
     }
 
-    /**
-     * @see TableLogic.Game#setMaxRoundsToPlay(int)
-     * @param maxRoundsToPlay
-     */
+    @Override
     public void setMaxRoundsToPlay(int maxRoundsToPlay) {
 	this.tableLogic.game.setMaxRoundsToPlay(maxRoundsToPlay);
     }
 
-    /**
-     * @see TableLogic.Game#setNumberOfGamesToPlay(int)
-     * @param numberOfGamesToPlay
-     */
+    @Override
     public void setNumberOfGamesToPlay(int numberOfGamesToPlay) {
 	this.tableLogic.game.setNumberOfGamesToPlay(numberOfGamesToPlay);
     }

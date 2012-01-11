@@ -28,21 +28,37 @@ public class DefaultPlayer extends AbstractPlayer {
 	    CardStack.FLAG_UNINITIALIZED };
     // the round we're playing
     private int gameRound = 0;
-    // tracks, wich colors were dropped during the game
+    // tracks, witch colors were dropped during the game
     protected byte[] dropColorIndex = new byte[CardStack.CARDS_MAX_COLOR];
 
-    // --- behavior defaults
-    // below witch value should we drop an initial card stack immediately?
-    private static final int BEHAVE_STACK_DROP_INITIAL_THRESHOLD = 20;
-    // when to consider dropping the stack
-    private static final int BEHAVE_STACK_DROP_THRESHOLD = 20;
-    // drop a card, even if one of three is missing, if it's rating is over..
-    private static final int BEHAVE_FORCE_DROP_TYPEGOAL = 20;
-    // wait for a third card if current rating is below..
-    private static final int BEHAVE_WAIT_FOR_TYPE_THRESHOLD = 21;
+    // behavior defaults
+    public enum Behavior {
+	// below witch value should we drop an initial card stack immediately?
+	stackDrop_initialThreshold(20),
+	// when to consider dropping the stack
+	stackDrop_threshold(20),
+	// drop a card, even if one of three is missing, if it's rating is
+	// over..
+	goalType_forceDropThreshold(20),
+	// wait for a third card if current rating is below..
+	goalType_waitForCardThreshold(21),
+	// how "risky" should this player behave (1-3, low to high)
+	riskyness(3);
 
-    // --- player model variables (between 1-3, low to high)
-    private final int playerModel_risk = 3;// new Random().nextInt(3) + 1;
+	protected byte value;
+
+	Behavior(int value) {
+	    this.value = (byte) value;
+	}
+
+	public byte getValue() {
+	    return this.value;
+	}
+
+	public void setValue(byte value) {
+	    this.value = value;
+	}
+    }
 
     // nested classes
     private CardRating cardRating = null;
@@ -373,25 +389,6 @@ public class DefaultPlayer extends AbstractPlayer {
     private class StackRating {
 	protected static final int NO_RESULT = -1;
 
-	// protected byte[] getCardsByValue(CardStack cardStack) {
-	// byte[] rating = new byte[CardStack.CARDS_MAX_CARD
-	// * CardStack.CARDS_MAX_COLOR];
-	// int ratingIndex = 0;
-	//
-	// // TODO: replace this dumb brute-force attempt, though it's quite
-	// // fast
-	// byte[] cardStackArray = cardStack.asArray();
-	// for (int i = -128; i < 127; i++) {
-	// for (int j = 0; j < cardStackArray.length; j++) {
-	// if (cardStackArray[j] == i) {
-	// rating[ratingIndex++] = (byte) j;
-	// }
-	// }
-	// }
-	//
-	// return rating;
-	// }
-
 	/**
 	 * Check, how many cards are missing to reach a goal state. No
 	 * calculation of values is involved here
@@ -505,13 +502,13 @@ public class DefaultPlayer extends AbstractPlayer {
 		value = (currentValue > value) ? currentValue : value;
 	    }
 
-	    if ((sameType == 2) && (DefaultPlayer.this.playerModel_risk >= 2)) {
+	    if ((sameType == 2) && (Behavior.riskyness.getValue() >= 2)) {
 		// MODEL:risk drop for three of same type
 		Debug.println(DefaultPlayer.this,
 			"#MODEL:risk Waiting for third card.");
-		if (value < BEHAVE_WAIT_FOR_TYPE_THRESHOLD) {
+		if (value < Behavior.goalType_waitForCardThreshold.getValue()) {
 		    value = (DefaultTable.WORTH_THREE_OF_SAME_TYPE / 3) * 2;
-		} else if (DefaultPlayer.this.playerModel_risk > 2) {
+		} else if (Behavior.riskyness.getValue() > 2) {
 		    Debug.println(DefaultPlayer.this,
 			    "#MODEL:risk Waiting for third card, even threshold looks good.");
 		}
@@ -628,11 +625,12 @@ public class DefaultPlayer extends AbstractPlayer {
 	Debug.println(this, "Deciding on my current card set: "
 		+ this.cardStack);
 
-	if (this.stackRating.byValue() < DefaultPlayer.BEHAVE_STACK_DROP_INITIAL_THRESHOLD) {
+	if (this.stackRating.byValue() < Behavior.stackDrop_initialThreshold
+		.getValue()) {
 	    // drop immediately if blow threshold
 	    Debug.println(this, String.format(
 		    "Dropping (below threshold (%d))",
-		    DefaultPlayer.BEHAVE_STACK_DROP_INITIAL_THRESHOLD));
+		    Behavior.stackDrop_initialThreshold.getValue()));
 
 	    this.log("Uhm... no!");
 	    return false;
@@ -777,12 +775,13 @@ public class DefaultPlayer extends AbstractPlayer {
 		// MODEL:risk wait for third card type?
 		if ((this.cardStack.card.getType(card) == goalDistance[2])
 			&& (goalDistance[3] > 0)) {
-		    if ((this.playerModel_risk >= 2)
-			    && (dropValue < BEHAVE_WAIT_FOR_TYPE_THRESHOLD)) {
+		    if ((Behavior.riskyness.getValue() >= 2)
+			    && (dropValue < Behavior.goalType_waitForCardThreshold
+				    .getValue())) {
 			Debug.println(this,
 				"#MODEL:risk Waiting for third card.");
 			continue;
-		    } else if (this.playerModel_risk > 2) {
+		    } else if (Behavior.riskyness.getValue() > 2) {
 			Debug.println(this,
 				"#MODEL:risk Waiting for third card, event threshold is good.");
 		    } else {

@@ -1,8 +1,13 @@
 package swimGame.table;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import swimGame.out.Console;
 import swimGame.out.Debug;
@@ -11,9 +16,9 @@ import swimGame.player.IPlayer;
 
 public class TableLogic {
     // nested classes
-    protected final TableLogic.Game game;
-    protected final TableLogic.Player player;
-    protected final TableLogic.Table table;
+    public final TableLogic.Game game;
+    public final TableLogic.Player player;
+    public final TableLogic.Table table;
     // name for nice console out
     private static final String CNAME = "Table";
     // maximum number of allowed players
@@ -86,23 +91,45 @@ public class TableLogic {
      * @author Jens Bertram <code@jens-bertram.net>
      * 
      */
-    protected class Player {
+    public class Player {
 	/** List of players joined this table */
-	protected final ArrayList<IPlayer> list = new ArrayList<IPlayer>(9);
-	private final double[] points = new double[9];
+	// linkedHashMap to ensure element ordering
+	protected final HashMap<IPlayer, Double> list = new LinkedHashMap<IPlayer, Double>();
 	// has current player performed an action before continuing?
-	boolean hasTakenAnAction = false;
+	public boolean hasTakenAnAction = false;
 	// Tracks if a player has finished his current move
-	protected boolean moveFinished = false;
+	public boolean moveFinished = false;
+
+	/** Comparator for player HashMap */
+	private class PlayerComparator implements Comparator<IPlayer> {
+	    @Override
+	    public int compare(IPlayer o1, IPlayer o2) {
+		System.out.println(o1.toString() + "<<" + o2.toString() + "<<");
+		Double p1 = TableLogic.Player.this.list.get(o1);
+		Double p2 = TableLogic.Player.this.list.get(o1);
+		if (p1 < p2) {
+		    return -1;
+		}
+		if (p1 == p2) {
+		    return 0;
+		}
+		return 1;
+	    }
+	}
+
+	// allows comparison of players by their overall points
+	PlayerComparator playerComparator = new PlayerComparator();
 
 	protected void add(IPlayer player) {
-	    this.list.add(player);
+	    this.list.put(player, new Double(0));
 	}
 
 	/** Get the current player index */
 	protected IPlayer get(int index) {
-	    return ((index > -1) && (index <= this.list.size())) ? this.list
-		    .get(index) : null;
+	    if ((index > -1) && (index <= this.list.size())) {
+		return (IPlayer) this.list.keySet().toArray()[0];
+	    }
+	    return null;
 	}
 
 	/** Get a new iterator */
@@ -112,23 +139,39 @@ public class TableLogic {
 
 	/** Add points to the all-games counter */
 	protected void addPoints(IPlayer player, Double pointsToAdd) {
-	    double currentPoints = this.points[this.list.indexOf(player)];
-	    this.points[this.list.indexOf(player)] = currentPoints
-		    + pointsToAdd;
+	    Double currentPoints = this.getPoints(player);
+	    this.list.put(player, currentPoints + pointsToAdd);
 	}
 
-	/** Get the all-games points fo a player */
+	/** Get the all-games points for a player */
 	protected double getPoints(IPlayer player) {
-	    return this.points[this.list.indexOf(player)];
+	    return this.list.get(player);
+	}
+
+	/** Get the list of players ranked by their overall game-points */
+	protected Map<IPlayer, Double> getRanked() {
+	    // sort
+	    List<IPlayer> keys = new ArrayList<IPlayer>(this.list.size());
+	    keys.addAll(this.list.keySet());
+	    Collections.sort(keys, new Comparator<IPlayer>() {
+		@Override
+		public int compare(IPlayer o1, IPlayer o2) {
+		    Double p1 = Player.this.list.get(o1);
+		    Double p2 = Player.this.list.get(o2);
+		    return p1.compareTo(p2);
+		}
+	    });
+
+	    Map<IPlayer, Double> rankedMap = new HashMap<IPlayer, Double>();
+	    for (IPlayer player : keys) {
+		rankedMap.put(player, this.list.get(player));
+	    }
+	    return rankedMap;
 	}
 
 	/** Amount of players on this table */
 	protected int size() {
 	    return this.list.size();
-	}
-
-	protected int indexOf(IPlayer player) {
-	    return this.list.indexOf(player);
 	}
 
 	/**
@@ -142,13 +185,13 @@ public class TableLogic {
 	 *            Some sort of data associated with an event
 	 */
 	protected void fireEvent(Event event, Object data) {
-	    for (IPlayer p : this.list) {
-		p.handleTableEvent(event, data);
+	    for (IPlayer player : this.list.keySet()) {
+		player.handleTableEvent(event, data);
 	    }
 	}
 
 	/** @see TableLogic.Player#fireEvent(Event, Object) */
-	protected void fireEvent(Event event) {
+	public void fireEvent(Event event) {
 	    this.fireEvent(event, null);
 	}
 
@@ -267,7 +310,7 @@ public class TableLogic {
      * @author Jens Bertram <code@jens-bertram.net>
      * 
      */
-    class Game implements Iterator<IPlayer> {
+    public class Game implements Iterator<IPlayer> {
 	// after how many rounds should the game be interrupted? (to catch
 	// non-enRoundsding games)
 	private int maxRoundsToPlay = 32;
@@ -280,7 +323,7 @@ public class TableLogic {
 	private final TableLogic.Player.PlayerIterator players = TableLogic.this.player
 		.iterator(true);
 	private IPlayer startingPlayer;
-	protected TableLogic.Game.Round round;
+	public TableLogic.Game.Round round;
 
 	/** Empty constructor */
 	protected Game() {
@@ -349,11 +392,11 @@ public class TableLogic {
 	}
 
 	/** Test, if the current game is finished */
-	protected boolean isFinished() {
+	public boolean isFinished() {
 	    return this.finished;
 	}
 
-	protected int current() {
+	public int current() {
 	    return this.currentGameNumber;
 	}
 
@@ -366,7 +409,7 @@ public class TableLogic {
 	    this.numberOfGamesToPlay = numberOfGamesToPlay;
 	}
 
-	protected int getMaxRoundsToPlay() {
+	public int getMaxRoundsToPlay() {
 	    return this.maxRoundsToPlay;
 	}
 
@@ -380,7 +423,7 @@ public class TableLogic {
 	 * @author @author Jens Bertram <code@jens-bertram.net>
 	 * 
 	 */
-	protected class Round implements Iterator<Integer> {
+	public class Round implements Iterator<Integer> {
 	    private byte currentRound = 1;
 	    private int maxNumberOfRounds = 32;
 	    private boolean finished = false;
@@ -404,9 +447,15 @@ public class TableLogic {
 		this.maxNumberOfRounds = maxNumberOfRounds;
 	    }
 
-	    protected void setCurrentPlayer(IPlayer player) {
-		this.currentPlayer = player;
-		this.players.setPointer(TableLogic.this.player.indexOf(player));
+	    protected void setCurrentPlayer(IPlayer playerToSet) {
+		byte i = 0;
+		for (IPlayer player : TableLogic.this.player.list.keySet()) {
+		    if (player.equals(playerToSet)) {
+			this.players.setPointer(i);
+			break;
+		    }
+		    i++;
+		}
 	    }
 
 	    /**
@@ -422,7 +471,7 @@ public class TableLogic {
 	     * 
 	     * @return The player who is starting this new round
 	     */
-	    protected IPlayer nextPlayer() {
+	    public IPlayer nextPlayer() {
 		this.currentPlayer = this.players.next();
 		if (this.players.hasWrapped()) {
 		    // FIXME: really next on wrap?
@@ -462,12 +511,12 @@ public class TableLogic {
 	    }
 
 	    /** Has this round finished? */
-	    protected boolean isFinished() {
+	    public boolean isFinished() {
 		return this.finished;
 	    }
 
 	    /** Current round number */
-	    protected int current() {
+	    public int current() {
 		return this.currentRound;
 	    }
 
@@ -481,7 +530,7 @@ public class TableLogic {
 	    }
 
 	    /** Test, if a given player has closed the round */
-	    protected boolean hasClosed(IPlayer player) {
+	    public boolean hasClosed(IPlayer player) {
 		return player.equals(this.closingPlayer);
 	    }
 
@@ -538,36 +587,29 @@ public class TableLogic {
 	}
     }
 
-    protected class Table {
+    public class Table {
 	// Table will be closed, if full or the game has begun
 	private boolean closed = false;
 	// Card stack owned by this table (stack will be full, i.e. has all
 	// cards)
 	protected CardStack cardStack = new CardStack(true);
 	// cards on the table
-	protected CardStack cardStackTable = new CardStack(false);
+	public CardStack cardStackTable = new CardStack(false);
 
 	/**
 	 * Close player participation opportunity and prepare game start.
 	 */
-	protected void close() {
+	public void close() {
 	    if (this.closed != true) {
 		TableLogic.this.player.fireEvent(Event.TABLE_CLOSED, null);
 		this.closed = true;
-		String playerNames = "";
-		for (IPlayer p : TableLogic.this.player.list) {
-		    playerNames += p.toString() + ", ";
-		}
-		Console.nl();
-		// this.logWriter.write("*** Table closed ***");
+
 		if (Debug.debug == true) {
 		    Debug.println(this.getClass(), String.format(
 			    "Players: %d  Maximum rounds: %d",
 			    TableLogic.this.player.size(),
 			    TableLogic.this.game.maxRoundsToPlay));
 		}
-		// this.logWriter.write(String.format("Players (in order) are: %s",
-		// playerNames.subSequence(0, playerNames.length() - 2)));
 	    }
 	}
 
@@ -606,7 +648,11 @@ public class TableLogic {
 
 	/** Get the list of players currently on this table */
 	public List<IPlayer> getPlayer() {
-	    return TableLogic.this.player.list;
+	    List playerList = new ArrayList(TableLogic.this.player.list.size());
+	    for (IPlayer player : TableLogic.this.player.list.keySet()) {
+		playerList.add(player);
+	    }
+	    return playerList;
 	}
     }
 
@@ -614,36 +660,24 @@ public class TableLogic {
      * Deliver cards to players
      */
     private void dealOutCards(IPlayer beginningPlayer) {
-	byte[] firstCards = new byte[3];
+	byte[] initialCardSet = new byte[3];
 
-	// this.logWriter.write(String.format("Dealing out cards to %s..",
-	// beginningPlayer.toString()));
-	for (IPlayer p : this.player.list) {
-	    if (p == beginningPlayer) {
-		firstCards = this.getPlayerCardSet();
-		p.setCards(firstCards);
+	for (IPlayer player : this.player.list.keySet()) {
+	    if (player == beginningPlayer) {
+		initialCardSet = this.getPlayerCardSet();
+		player.setCards(initialCardSet);
 	    } else {
 		// pass initial cards to player
-		p.setCards(this.getPlayerCardSet());
+		player.setCards(this.getPlayerCardSet());
 	    }
 	}
 
-	// this.logWriter.player("begins!");
-
 	// deal out a second set of cards for the first player, if he want so
 	if (beginningPlayer.keepCardSet() == false) {
-	    // player is about to drop his cards - make them public
-	    // this.logWriter.player("drops the initial card set: %s",
-	    // new CardStack(firstCards).toString());
-	    // this.firePlayerEvent(Event.INITIAL_CARDSTACK_DROPPED,
-	    // firstCards);
-
 	    // update cards on table
-	    this.table.cardStackTable.card.add(firstCards);
-
-	    // deal out second card set
-	    // this.logWriter.write("Dealing out a second card set for %s..",
-	    // beginningPlayer);
+	    this.player.fireEvent(Event.INITIAL_CARDSTACK_DROPPED,
+		    initialCardSet);
+	    this.table.cardStackTable.card.add(initialCardSet);
 	    beginningPlayer.setCards(this.getPlayerCardSet());
 	} else {
 	    // player took first cards - make a second public
