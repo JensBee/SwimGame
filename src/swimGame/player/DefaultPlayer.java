@@ -3,7 +3,8 @@ package swimGame.player;
 import swimGame.out.Debug;
 import swimGame.table.CardStack;
 import swimGame.table.CardStack.CardIterator;
-import swimGame.table.Table;
+import swimGame.table.DefaultTable;
+import swimGame.table.TableLogic;
 
 /**
  * A player playing the game. The default implementation of a player.
@@ -47,8 +48,8 @@ public class DefaultPlayer extends AbstractPlayer {
     private CardRating cardRating = null;
     private final StackRating stackRating = new StackRating();
 
-    public DefaultPlayer(Table table) {
-	super(table);
+    public DefaultPlayer(TableLogic tableLogic) {
+	super(tableLogic);
     }
 
     private void initialize() {
@@ -448,7 +449,7 @@ public class DefaultPlayer extends AbstractPlayer {
 	    }
 	    if (valueType >= 2) {
 		distances[2] = positionType;
-		distances[3] = (byte) (Table.RULE_GOAL_CARDS_BY_TYPE - valueType);
+		distances[3] = (byte) (TableLogic.RULE_GOAL_CARDS_BY_TYPE - valueType);
 	    }
 	    return distances;
 	}
@@ -486,7 +487,7 @@ public class DefaultPlayer extends AbstractPlayer {
 
 		// same type in three colors is fixed value
 		if (sameType >= 3) {
-		    return Table.WORTH_THREE_OF_SAME_TYPE;
+		    return DefaultTable.WORTH_THREE_OF_SAME_TYPE;
 		}
 
 		// do we have another card of the same color?
@@ -509,7 +510,7 @@ public class DefaultPlayer extends AbstractPlayer {
 		Debug.println(DefaultPlayer.this,
 			"#MODEL:risk Waiting for third card.");
 		if (value < BEHAVE_WAIT_FOR_TYPE_THRESHOLD) {
-		    value = (Table.WORTH_THREE_OF_SAME_TYPE / 3) * 2;
+		    value = (DefaultTable.WORTH_THREE_OF_SAME_TYPE / 3) * 2;
 		} else if (DefaultPlayer.this.playerModel_risk > 2) {
 		    Debug.println(DefaultPlayer.this,
 			    "#MODEL:risk Waiting for third card, even threshold looks good.");
@@ -591,7 +592,7 @@ public class DefaultPlayer extends AbstractPlayer {
 				    int ratingValue = DefaultPlayer.this.cardStackNeed.card
 					    .getValue(cardToCheck)
 					    + CardRating.INFLUENCE_SAME_TYPE
-					    + (int) (Table.WORTH_THREE_OF_SAME_TYPE / 3);
+					    + (int) (DefaultTable.WORTH_THREE_OF_SAME_TYPE / 3);
 
 				    for (int fixedTypeCard = 0; fixedTypeCard < CardStack.CARDS_MAX_COLOR; fixedTypeCard++) {
 					int cardToRate = cardNum
@@ -797,15 +798,17 @@ public class DefaultPlayer extends AbstractPlayer {
 	// end game?
 	if ((this.gameIsClosed == false) && (dropValue > StackRating.NO_RESULT)) {
 	    this.log("*knock!, knock!*");
-	    this.table.interact(Table.Action.END_CALL,
+	    this.tableLogic.interact(TableLogic.Action.END_CALL,
 		    this.cardStack.getCards());
 	} else {
 	    if (cardToDrop[0] == -1) {
 		// TODO: evaluate skip action
 	    } else {
 		// drop & pick
-		if (this.table.interact(Table.Action.DROP_CARD, cardToDrop[0])
-			&& this.table.interact(Table.Action.PICK_CARD,
+		if (this.tableLogic.interact(TableLogic.Action.DROP_CARD,
+			cardToDrop[0])
+			&& this.tableLogic.interact(
+				TableLogic.Action.PICK_CARD,
 				this.cardsTableTriple[0])) {
 		    this.cardStack.card.remove(cardToDrop[0]);
 		    this.cardStack.card.add(this.cardsTableTriple[0]);
@@ -814,11 +817,11 @@ public class DefaultPlayer extends AbstractPlayer {
 	}
 	// finished
 	this.gameRound++;
-	this.table.interact(Table.Action.MOVE_FINISHED);
+	this.tableLogic.interact(TableLogic.Action.MOVE_FINISHED);
     }
 
     @Override
-    public void handleTableEvent(Table.Event event, Object data) {
+    public void handleTableEvent(TableLogic.Event event, Object data) {
 	switch (event) {
 	case INITIAL_CARDSTACK_DROPPED:
 	    this.cardStackTable.card.add((byte[]) data);

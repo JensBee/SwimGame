@@ -3,7 +3,8 @@ package swimGame;
 import swimGame.out.Console;
 import swimGame.out.Debug;
 import swimGame.player.HumanPlayer;
-import swimGame.table.Table;
+import swimGame.table.DefaultTable;
+import swimGame.table.TableLogic;
 
 public class SwimGame {
     private static final double version = 0.1;
@@ -50,11 +51,13 @@ public class SwimGame {
     public static void main(final String[] args) {
 	int numberOfPLayers = 3;
 	// max rounds to play till the table intercepts
-	Table.MAX_ROUNDS = 32;
+	// TODO: set max rounds
+	// Table.MAX_ROUNDS = 32;
 	// game playing table
-	Table table;
+	DefaultTable table;
 	// default rounds to play
-	int numberOfRounds = 1;
+	int numberOfGamesToPlay = 1;
+	int maxRoundsToPlay = 1;
 
 	Console.println("SWIMMING.GAME.O°o°O°o.\nv" + SwimGame.version
 		+ ", 2011 Jens Bertram <code@jens-bertram.net>\n");
@@ -81,14 +84,14 @@ public class SwimGame {
 		break;
 	    case "--max-rounds":
 		if (i < args.length) {
-		    Table.MAX_ROUNDS = Integer.parseInt(args[i++]);
+		    maxRoundsToPlay = Integer.parseInt(args[i++]);
 		} else {
 		    SwimGame.exitWithError("No value for parameter --max-rounds given.");
 		}
 		break;
 	    case "--plays":
 		if (i < args.length) {
-		    numberOfRounds = Integer.parseInt(args[i++]);
+		    numberOfGamesToPlay = Integer.parseInt(args[i++]);
 		} else {
 		    SwimGame.exitWithError("No value for parameter --plays given.");
 		}
@@ -100,7 +103,7 @@ public class SwimGame {
 		humanPlayer = true;
 		break;
 	    case "--paused":
-		Table.pauseAfterRound = true;
+		DefaultTable.pauseAfterRound = true;
 		break;
 	    }
 	}
@@ -115,22 +118,27 @@ public class SwimGame {
 	int gamePlayer = numberOfPLayers + ((humanPlayer) ? 1 : 0);
 	Console.println(String.format(
 		"INFO: Game will be played with %d players", gamePlayer));
-	Console.println(String
-		.format("INFO: A maximum of %d rounds will be played",
-			Table.MAX_ROUNDS));
+	// TODO: get max rounds
+	// Console.println(String
+	// .format("INFO: A maximum of %d rounds will be played",
+	// Table.MAX_ROUNDS));
 	Console.nl();
 
-	table = new Table(numberOfRounds);
+	// table = new Table(numberOfRounds);
+	// TODO: set max rounds
+	table = new DefaultTable();
+	table.setMaxRoundsToPlay(maxRoundsToPlay);
+	table.setNumberOfGamesToPlay(numberOfGamesToPlay);
 
 	// try add some players
 	try {
 	    if (humanPlayer) {
-		if (numberOfPLayers == Table.MAX_PLAYER) {
+		if (numberOfPLayers == TableLogic.MAX_PLAYER) {
 		    Console.println("WARN: Removed one player to get a slot for the human player");
 		    table.addPlayers(numberOfPLayers - 1);
 		}
 		table.addPlayers(numberOfPLayers);
-		table.addPlayer(new HumanPlayer(table));
+		table.addPlayer(new HumanPlayer(table.getLogic()));
 	    } else {
 		table.addPlayers(numberOfPLayers);
 	    }

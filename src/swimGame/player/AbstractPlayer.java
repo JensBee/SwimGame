@@ -6,14 +6,14 @@ import java.util.Random;
 import swimGame.out.Console;
 import swimGame.out.Debug;
 import swimGame.table.CardStack;
-import swimGame.table.Table;
+import swimGame.table.TableLogic;
 
 /**
  * A player playing the game. This abstract class handles the basic player
  * interaction with the table. The real game logic must be implemented by the
  * driving classes.
  * 
- * @see swimGame.table.Table
+ * @see swimGame.table.DefaultTable
  * @author Jens Bertram <code@jens-bertram.net>
  * 
  */
@@ -23,7 +23,7 @@ abstract class AbstractPlayer implements IPlayer {
     /** Holds a list of predefined player names */
     private static ArrayList<String> nameList;
     /** Reference to the table we're playing on */
-    protected Table table;
+    protected TableLogic tableLogic;
     // one random generator for all players
     private static Random random;
     /** Cards owned by this player */
@@ -67,8 +67,8 @@ abstract class AbstractPlayer implements IPlayer {
     /**
      * Empty constructor
      */
-    public AbstractPlayer(Table table) {
-	this.table = table;
+    public AbstractPlayer(TableLogic tableLogic) {
+	this.tableLogic = tableLogic;
 	this.initNames();
 	// get a random name
 	this.name = AbstractPlayer.nameList.remove(AbstractPlayer.random
@@ -81,8 +81,8 @@ abstract class AbstractPlayer implements IPlayer {
      * @param name
      *            The name of this player
      */
-    public AbstractPlayer(Table table, final String name) {
-	this.table = table;
+    public AbstractPlayer(TableLogic tableLogic, final String name) {
+	this.tableLogic = tableLogic;
 	this.name = name;
     }
 
@@ -116,7 +116,7 @@ abstract class AbstractPlayer implements IPlayer {
     }
 
     @Override
-    public void handleTableEvent(Table.Event event, Object data) {
+    public void handleTableEvent(TableLogic.Event event, Object data) {
 	switch (event) {
 	case GAME_CLOSED:
 	    this.gameIsClosed = true;

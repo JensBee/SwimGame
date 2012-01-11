@@ -429,7 +429,7 @@ public class CardStack {
 	}
 
 	// three of a type?
-	for (byte type = 0; type < CardStack.CARDS_MAX_COLOR; type++) {
+	for (byte type = 0; type < CardStack.CARDS_MAX_CARD; type++) {
 	    int newValue = 0;
 	    int count = 0;
 	    for (byte card : this.getCardsByType(type)) {
@@ -438,11 +438,11 @@ public class CardStack {
 		    count++;
 		}
 	    }
+
 	    if (count == 3) {
-		return Table.WORTH_THREE_OF_SAME_TYPE;
+		return DefaultTable.WORTH_THREE_OF_SAME_TYPE;
 	    }
 	}
-
 	return value;
     }
 

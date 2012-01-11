@@ -1,16 +1,19 @@
 package swimGame.testing;
 
-import swimGame.table.Table;
+import swimGame.table.AbstractTable;
+import swimGame.table.TableLogic.Action;
 
-public class FakeTable extends Table {
+public class FakeTable extends AbstractTable {
 
-    @Override
-    public boolean interact(Table.Action action) {
-	return true;
+    FakeTable() {
+	super();
+	// TODO Auto-generated constructor stub
     }
 
     @Override
-    public boolean interact(Table.Action action, Object data) {
-	return true;
+    public void handleTableLogicEvent(Action action, Object data) {
+	// TODO Auto-generated method stub
+
     }
+
 }
