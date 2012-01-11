@@ -84,14 +84,14 @@ public class Table {
      */
     private class Player {
 	/** List of players joined this table */
-	private final ArrayList<IPlayer> list = new ArrayList<IPlayer>();
-	// TODO: combine this with the existing player list
+	private final ArrayList<IPlayer> list = new ArrayList<IPlayer>(9);
 	private final double[] points = new double[9];
 
 	protected void add(IPlayer player) {
 	    this.list.add(player);
 	}
 
+	/** Get the current player index */
 	protected IPlayer get(int index) {
 	    return ((index > -1) && (index <= this.list.size())) ? this.list
 		    .get(index) : null;
@@ -102,16 +102,19 @@ public class Table {
 	    return new PlayerIterator(wrapAround);
 	}
 
+	/** Add points to the all-games counter */
 	protected void addPoints(IPlayer player, Double pointsToAdd) {
 	    double currentPoints = this.points[this.list.indexOf(player)];
 	    this.points[this.list.indexOf(player)] = currentPoints
 		    + pointsToAdd;
 	}
 
+	/** Get the all-games points fo a player */
 	protected double getPoints(IPlayer player) {
 	    return this.points[this.list.indexOf(player)];
 	}
 
+	/** Amount of players on this table */
 	protected int size() {
 	    return this.list.size();
 	}
@@ -123,13 +126,18 @@ public class Table {
 	 * 
 	 */
 	private class PlayerIterator implements Iterator<IPlayer> {
-	    private int pointer = -1;
-	    private int closingPointer = -1;
+	    private byte pointer = -1;
+	    private byte closingPointer = -1;
 	    // restart iteration from the beginning, if we hit the end?
 	    private boolean wrapAround = false;
 	    // has last next() call wrapped the pointer?
 	    private boolean hasWrapped = false;
 
+	    /**
+	     * @param wrapAround
+	     *            If true, the iterator will restart at the beginning,
+	     *            if hitting the end of the player list
+	     */
 	    public PlayerIterator(boolean wrapAround) {
 		this.wrapAround = wrapAround;
 	    }
@@ -163,6 +171,7 @@ public class Table {
 		    }
 
 		    IPlayer player = this.get();
+		    // TODO: this should go into table base
 		    Console.println(Table.CNAME,
 			    String.format("It's your turn %s", player));
 		    Table.this.playerMoveFinished = false;
@@ -171,21 +180,24 @@ public class Table {
 		return null;
 	    }
 
+	    /** Resets the iterator to the beginning of the player-list */
 	    protected void reset() {
 		this.pointer = -1;
 	    }
 
 	    @Override
-	    public void remove() throws IllegalStateException {
-		throw new IllegalStateException("Operation not supported.");
+	    public void remove() {
+		// not implemented
 	    }
 
-	    protected int getId() {
+	    /** Index of the current player in the player list */
+	    protected byte getIndex() {
 		return (this.pointer == -1) ? 0 : this.pointer;
 	    }
 
+	    /** Get the player the iterator is currently pointing at */
 	    protected IPlayer get() {
-		return Table.this.player.get(this.getId());
+		return Table.this.player.get(this.getIndex());
 	    }
 
 	    /**
@@ -196,12 +208,16 @@ public class Table {
 	     */
 	    protected boolean setAsClosing() {
 		if (this.closingPointer == -1) {
-		    this.closingPointer = this.getId();
+		    this.closingPointer = this.getIndex();
 		    return true;
 		}
 		return false;
 	    }
 
+	    /**
+	     * @return True, if while getting the current player the iterator
+	     *         has wrapped around
+	     */
 	    public boolean hasWrapped() {
 		return this.hasWrapped;
 	    }
@@ -254,7 +270,7 @@ public class Table {
     private static class Cards {
 	protected static boolean verifyGoal(byte[] cards) {
 	    CardStack userCardStack;
-	    int cardsCount;
+	    byte cardsCount;
 
 	    try {
 		userCardStack = new CardStack(cards);
@@ -298,15 +314,15 @@ public class Table {
      * @author Jens Bertram <code@jens-bertram.net>
      * 
      */
-    private class Game {
+    private class Game implements Iterator<IPlayer> {
 	/**
 	 * Rounds of a game being played
 	 * 
 	 * @author @author Jens Bertram <code@jens-bertram.net>
 	 * 
 	 */
-	private class Round {
-	    private int currentRound = 1;
+	private class Round implements Iterator<Integer> {
+	    private byte currentRound = 1;
 	    private int maxNumberOfRounds = 32;
 	    private boolean finished = false;
 	    private final Table.Player.PlayerIterator players;
@@ -350,15 +366,18 @@ public class Table {
 		return this.currentPlayer;
 	    }
 
-	    protected void next() {
+	    @Override
+	    public Integer next() {
 		this.currentRound++;
 		if (this.currentRound == this.maxNumberOfRounds) {
 		    this.finished = true;
 		}
+		return (int) this.currentRound;
 	    }
 
 	    /** Is there a next round left to play? */
-	    protected boolean hasNext() {
+	    @Override
+	    public boolean hasNext() {
 		if (this.finished) {
 		    return false;
 		}
@@ -404,6 +423,11 @@ public class Table {
 	    /** Get the current player of this round */
 	    protected IPlayer currentPlayer() {
 		return this.currentPlayer;
+	    }
+
+	    @Override
+	    public void remove() {
+		// not implemented
 	    }
 	}
 
@@ -453,7 +477,8 @@ public class Table {
 	}
 
 	/** Check if there's a next game we want to play */
-	protected boolean hasNext() {
+	@Override
+	public boolean hasNext() {
 	    if ((this.currentGameNumber + 1) <= this.numberOfGamesToPlay) {
 		return true;
 	    }
@@ -465,7 +490,8 @@ public class Table {
 	 * Prepare the next game. This should handle all needed steps to start a
 	 * new round.
 	 */
-	protected IPlayer next() {
+	@Override
+	public IPlayer next() {
 	    this.currentGameNumber++;
 	    if (this.currentGameNumber > this.numberOfGamesToPlay) {
 		this.finished = true;
@@ -482,6 +508,11 @@ public class Table {
 
 	protected int current() {
 	    return this.currentGameNumber;
+	}
+
+	@Override
+	public void remove() {
+	    // not implemented
 	}
     }
 

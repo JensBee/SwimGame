@@ -16,8 +16,9 @@ public class PlayerCardRating {
 	IPlayer player = new DefaultPlayer(new FakeTable());
 	CardStack cardStack = new CardStack();
 
-	cardStack.card.add(new byte[] { 10, 18, 26 });
+	cardStack.card.add(new byte[] { 7, 19, 27 });
 	System.out.println("Cards: " + cardStack.toString());
+	System.out.println("Cards value: " + cardStack.getValue());
 	player.setCards(cardStack.getCards());
 	player.handleTableEvent(Table.Event.GAME_START, null);
 	player.doMove(new byte[] { 5, 17, 24 });
