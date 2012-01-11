@@ -14,9 +14,9 @@ public class Table {
     // Table will be closed, if full or the game has begun
     private boolean tableClosed = false;
     /** Card stack owned by this table (stack will be full, i.e. has all cards) */
-    private final CardStack cardStack = new CardStack(true);
+    private CardStack cardStack = new CardStack(true);
     // cards on the table
-    private final CardStack cardStackTable = new CardStack(false);
+    private CardStack cardStackTable = new CardStack(false);
     // name for console out
     private static final String CNAME = "Table";
     // Tracks if a player has finished his current move
@@ -119,6 +119,10 @@ public class Table {
 	    return this.list.size();
 	}
 
+	protected int indexOf(IPlayer player) {
+	    return this.list.indexOf(player);
+	}
+
 	/**
 	 * Manage players in game-rounds
 	 * 
@@ -155,6 +159,10 @@ public class Table {
 		    return true;
 		}
 		return false;
+	    }
+
+	    protected void setPointer(int pointer) {
+		this.pointer = (byte) pointer;
 	    }
 
 	    @Override
@@ -345,6 +353,11 @@ public class Table {
 		this.maxNumberOfRounds = maxNumberOfRounds;
 	    }
 
+	    protected void setCurrentPlayer(IPlayer player) {
+		this.currentPlayer = player;
+		this.players.setPointer(Table.this.player.indexOf(player));
+	    }
+
 	    /**
 	     * Initialize the round managing. This must be called, after all
 	     * players have joined the table.
@@ -361,6 +374,7 @@ public class Table {
 	    protected IPlayer nextPlayer() {
 		this.currentPlayer = this.players.next();
 		if (this.players.hasWrapped()) {
+		    // FIXME: really next on wrap?
 		    this.next();
 		}
 		return this.currentPlayer;
@@ -498,6 +512,10 @@ public class Table {
 	    }
 	    this.round.reset();
 	    this.startingPlayer = this.players.next();
+	    Table.this.game.round.setCurrentPlayer(this.startingPlayer);
+	    Table.this.cardStackTable = new CardStack(false);
+	    Table.this.cardStack = new CardStack(true);
+	    Table.this.dealOutCards(this.startingPlayer);
 	    return this.startingPlayer;
 	}
 
@@ -602,10 +620,7 @@ public class Table {
 
 	this.close();
 	this.firePlayerEvent(Event.GAME_START, null);
-
 	this.game.initialize();
-
-	this.dealOutCards(this.game.round.currentPlayer());
 
 	IPlayer currentPlayer;
 	while (this.game.hasNext()) {
@@ -683,7 +698,7 @@ public class Table {
      * @return The randomly generated card set
      * @throws Exception
      */
-    private byte[] getPlayerCardSet() throws Exception {
+    private byte[] getPlayerCardSet() {
 	return new byte[] { this.cardStack.card.getRandom(),
 		this.cardStack.card.getRandom(),
 		this.cardStack.card.getRandom() };
@@ -746,10 +761,11 @@ public class Table {
     /**
      * Deliver cards to players
      */
-    private void dealOutCards(IPlayer beginningPlayer) throws Exception {
+    private void dealOutCards(IPlayer beginningPlayer) {
 	byte[] firstCards = new byte[3];
 
-	this.logWriter.write("Dealing out cards..");
+	this.logWriter.write(String.format("Dealing out cards to %s..",
+		beginningPlayer.toString()));
 	for (IPlayer p : this.player.list) {
 	    if (p == beginningPlayer) {
 		firstCards = this.getPlayerCardSet();
