@@ -80,6 +80,7 @@ public abstract class AbstractTable implements ITable {
 
     @Override
     public void start() {
+	this.tableLogic.initialize();
 	this.tableLogic.player.fireEvent(TableLogic.Event.GAME_START);
     }
 

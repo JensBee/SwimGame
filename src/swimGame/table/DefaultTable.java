@@ -20,7 +20,6 @@ public class DefaultTable extends AbstractTable {
     @Override
     public void start() {
 	super.start();
-	this.tableLogic.table.close();
 
 	for (IPlayer player : this.tableLogic.table.getPlayer()) {
 	    this.logWriter.write("%s joined the table", player.toString());

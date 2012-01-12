@@ -121,6 +121,7 @@ public class TableLogic {
 	PlayerComparator playerComparator = new PlayerComparator();
 
 	protected void add(IPlayer player) {
+	    System.out.println("#ADD");
 	    this.list.put(player, new Double(0));
 	}
 
@@ -198,7 +199,7 @@ public class TableLogic {
 	/**
 	 * Manage players in game-rounds
 	 * 
-	 * @author Jens Bertram <code@jens-bertram.net>
+	 * @author Jens Bertram <code@jens-bertram.neinitializet>
 	 * 
 	 */
 	private class PlayerIterator implements Iterator<IPlayer> {
@@ -208,6 +209,10 @@ public class TableLogic {
 	    private boolean wrapAround = false;
 	    // has last next() call wrapped the pointer?
 	    private boolean hasWrapped = false;
+	    // get the IPlayer objects as array for easy index handling
+	    private IPlayer[] player;
+	    // track, if we have already build the player array
+	    private final boolean initialized = false;
 
 	    /**
 	     * @param wrapAround
@@ -218,13 +223,27 @@ public class TableLogic {
 		this.wrapAround = wrapAround;
 	    }
 
+	    protected void initialize() {
+		int i = 0;
+		this.player = new IPlayer[TableLogic.this.player.list.size()];
+		for (IPlayer player : TableLogic.this.player.list.keySet()) {
+		    this.player[i] = player;
+		    i++;
+		}
+	    }
+
 	    @Override
 	    public boolean hasNext() {
+		if (this.initialized == false) {
+		    this.initialize();
+		}
+
 		if (this.wrapAround) {
 		    // this one is never ending
 		    return true;
 		}
-		if ((this.pointer + 1) < TableLogic.this.player.size()) {
+
+		if ((this.pointer + 1) < this.player.length) {
 		    if ((this.pointer + 1) == this.closingPointer) {
 			return false;
 		    }
@@ -239,10 +258,14 @@ public class TableLogic {
 
 	    @Override
 	    public IPlayer next() {
+		if (this.initialized == false) {
+		    this.initialize();
+		}
+
 		if (this.hasNext()) {
 		    this.pointer++;
 
-		    if (this.pointer == TableLogic.this.player.size()) {
+		    if (this.pointer == this.player.length) {
 			this.hasWrapped = true;
 			this.reset();
 			this.pointer++;
@@ -272,12 +295,15 @@ public class TableLogic {
 
 	    /** Index of the current player in the player list */
 	    protected byte getIndex() {
+		if (this.initialized == false) {
+		    this.initialize();
+		}
 		return (this.pointer == -1) ? 0 : this.pointer;
 	    }
 
 	    /** Get the player the iterator is currently pointing at */
 	    protected IPlayer get() {
-		return TableLogic.this.player.get(this.getIndex());
+		return this.player[this.getIndex()];
 	    }
 
 	    /**
@@ -359,6 +385,7 @@ public class TableLogic {
 	 * joining the table.
 	 */
 	protected void initialize() {
+	    // when & who?
 	    this.round.initialize();
 	}
 
@@ -755,5 +782,10 @@ public class TableLogic {
     /** Proxy player events to the table controller */
     private void proxyInteractionEvent(Action action, Object data) {
 	this.tableController.handleTableLogicEvent(action, data);
+    }
+
+    /** Setup the table logic */
+    public void initialize() {
+	this.table.close();
     }
 }
