@@ -27,7 +27,7 @@ public class DefaultPlayer extends AbstractPlayer {
 	    CardStack.FLAG_UNINITIALIZED, CardStack.FLAG_UNINITIALIZED,
 	    CardStack.FLAG_UNINITIALIZED };
     // the round we're playing
-    private int gameRound = 0;
+    // private int gameRound = 0;
     // tracks, witch colors were dropped during the game
     protected byte[] dropColorIndex = new byte[CardStack.CARDS_MAX_COLOR];
 
@@ -76,7 +76,7 @@ public class DefaultPlayer extends AbstractPlayer {
 	for (int i = 0; i < this.dropColorIndex.length; i++) {
 	    this.dropColorIndex[i] = 0;
 	}
-	this.gameRound = 0;
+	// this.gameRound = 0;
 	if (this.cardRating != null) {
 	    this.cardRating.reset();
 	}
@@ -815,7 +815,7 @@ public class DefaultPlayer extends AbstractPlayer {
 	    }
 	}
 	// finished
-	this.gameRound++;
+	// this.gameRound++;
 	this.tableLogic.interact(TableLogic.Action.MOVE_FINISHED);
     }
 

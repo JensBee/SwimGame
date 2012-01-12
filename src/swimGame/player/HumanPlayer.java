@@ -29,15 +29,6 @@ public class HumanPlayer extends AbstractPlayer {
 	return 'X';
     }
 
-    private void waitForReturn() {
-	Console.println("\nPress return to start...");
-	try {
-	    System.in.read();
-	} catch (IOException e) {
-	    e.printStackTrace();
-	}
-    }
-
     @Override
     public boolean keepCardSet() {
 	Debug.println("-----------Keep?");

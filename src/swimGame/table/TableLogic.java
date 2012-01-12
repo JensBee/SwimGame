@@ -18,8 +18,6 @@ public class TableLogic {
     public final TableLogic.Game game;
     public final TableLogic.Player player;
     public final TableLogic.Table table;
-    // name for nice console out
-    private static final String CNAME = "Table";
     // maximum number of allowed players
     public static final int MAX_PLAYER = 9;
     // how many cards needed by type to be in goal state?
