@@ -68,6 +68,10 @@ public class DefaultPlayer extends AbstractPlayer {
 	super(tableLogic);
     }
 
+    public DefaultPlayer(TableLogic tableLogic, String name) {
+	super(tableLogic, name);
+    }
+
     private void initialize() {
 	this.cardStackTable = new CardStack();
 	this.cardStackNeed = new CardStack();

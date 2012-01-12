@@ -42,37 +42,34 @@ public class DefaultTable extends AbstractTable {
 
 		Debug.println(String.format("*** Game %d ** Round %d ***",
 			this.tableLogic.game.current(),
-			this.tableLogic.game.round.current()));
+			this.tableLogic.game.round.getCurrent()));
 
 		this.currentPlayer = this.tableLogic.game.round.nextPlayer();
-		if (this.tableLogic.game.round.hasClosed(this.currentPlayer)) {
+		if (this.tableLogic.game.round.isClosedBy(this.currentPlayer)) {
 		    break;
 		}
 
 		this.logWriter.write("Cards: "
-			+ this.tableLogic.table.cardStackTable.toString());
-		this.tableLogic.player.hasTakenAnAction = false;
+			+ this.tableLogic.table.getCardStack().toString());
 
 		this.logWriter.write("It's your turn %s", this.currentPlayer);
-		this.currentPlayer.doMove(this.tableLogic.table.cardStackTable
+		this.currentPlayer.doMove(this.tableLogic.table.getCardStack()
 			.getCards());
 
-		while (this.tableLogic.player.moveFinished != true) {
+		while (this.tableLogic.player.getFinishedTurn() != true) {
 		    // player actions are handled via events
 		}
 
-		if (this.tableLogic.player.hasTakenAnAction == false) {
+		if (this.tableLogic.player.getTookAction() == false) {
 		    this.logWriter.write("%s skipped!",
 			    this.currentPlayer.toString());
 		}
 	    }
 
-	    this.tableLogic.player.fireEvent(TableLogic.Event.GAME_FINISHED);
-
 	    if (this.tableLogic.game.round.isFinished()) {
 		this.logWriter
 			.write("Sorry players, I'll stop here! You reached the maximum of %d rounds without anyone winning.",
-				this.tableLogic.game.getMaxRoundsToPlay());
+				this.tableLogic.game.round.getMaxLength());
 	    }
 	    this.generateRating();
 
@@ -93,9 +90,9 @@ public class DefaultTable extends AbstractTable {
 	byte rank;
 
 	this.logWriter.write("Player game-rating:");
-	for (IPlayer player : this.tableLogic.player.list.keySet()) {
+	for (IPlayer player : this.tableLogic.player.getList()) {
 	    byte[] playerCards = player.getCards();
-	    String playerName = (this.tableLogic.game.round.hasClosed(player)) ? "* "
+	    String playerName = (this.tableLogic.game.round.isClosedBy(player)) ? "* "
 		    + player.toString()
 		    : player.toString();
 	    if (playerCards == null) {
@@ -116,7 +113,7 @@ public class DefaultTable extends AbstractTable {
 	    this.logWriter
 		    .write(String.format("%d. %s with %.0f", rank,
 			    player.toString(),
-			    this.tableLogic.player.list.get(player)));
+			    this.tableLogic.player.getPoints(player)));
 	    rank++;
 	}
     }

@@ -54,7 +54,7 @@ public class SwimGame {
 	DefaultTable table;
 	// default rounds to play
 	int numberOfGamesToPlay = 1;
-	int maxRoundsToPlay = 1;
+	int maxRoundsToPlay = 32;
 
 	Console.println("SWIMMING.GAME.O°o°O°o.\nv" + SwimGame.version
 		+ ", 2011 Jens Bertram <code@jens-bertram.net>\n");

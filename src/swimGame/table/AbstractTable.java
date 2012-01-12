@@ -29,7 +29,7 @@ public abstract class AbstractTable implements ITable {
 
 	private String getPlayerName() {
 	    return this.getPlayerName(AbstractTable.this.tableLogic.game.round
-		    .currentPlayer());
+		    .getCurrentPlayer());
 	}
 
 	protected void player(String format, Object... args) {
@@ -81,12 +81,11 @@ public abstract class AbstractTable implements ITable {
     @Override
     public void start() {
 	this.tableLogic.initialize();
-	this.tableLogic.player.fireEvent(TableLogic.Event.GAME_START);
     }
 
     @Override
     public void setMaxRoundsToPlay(int maxRoundsToPlay) {
-	this.tableLogic.game.setMaxRoundsToPlay(maxRoundsToPlay);
+	this.tableLogic.game.round.setMaxLength(maxRoundsToPlay);
     }
 
     @Override

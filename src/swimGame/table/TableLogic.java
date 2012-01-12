@@ -13,8 +13,15 @@ import swimGame.out.Debug;
 import swimGame.player.DefaultPlayer;
 import swimGame.player.IPlayer;
 
+/**
+ * Self contained class that handles all the logic needed to get the game
+ * running.
+ * 
+ * @author Jens Bertram <code@jens-bertram.net>
+ * 
+ */
 public class TableLogic {
-    // nested classes
+    // nested classes - these should be public accessible
     public final TableLogic.Game game;
     public final TableLogic.Player player;
     public final TableLogic.Table table;
@@ -91,13 +98,13 @@ public class TableLogic {
      * 
      */
     public class Player {
-	/** List of players joined this table */
-	// linkedHashMap to ensure element ordering
-	protected final HashMap<IPlayer, Double> list = new LinkedHashMap<IPlayer, Double>();
+	// List of players joined this table. LinkedHashMap to ensure element
+	// ordering
+	private final Map<IPlayer, Double> list = new LinkedHashMap<IPlayer, Double>();
 	// has current player performed an action before continuing?
-	public boolean hasTakenAnAction = false;
+	private boolean tookAction = false;
 	// Tracks if a player has finished his current move
-	public boolean moveFinished = false;
+	private boolean finishedTurn = false;
 
 	/** Comparator for player HashMap */
 	private class PlayerComparator implements Comparator<IPlayer> {
@@ -118,48 +125,60 @@ public class TableLogic {
 	// allows comparison of players by their overall points
 	PlayerComparator playerComparator = new PlayerComparator();
 
-	protected void add(IPlayer player) {
+	/** Has player already taken an action while in turn? */
+	public boolean getTookAction() {
+	    return this.tookAction;
+	}
+
+	/** Set flag that player took an action on his turn */
+	private void setTookAction(boolean state) {
+	    this.tookAction = state;
+	}
+
+	/** Get the current players turn state */
+	public boolean getFinishedTurn() {
+	    return this.finishedTurn;
+	}
+
+	/** Get the list of players */
+	public List<IPlayer> getList() {
+	    return new ArrayList<IPlayer>(this.list.keySet());
+	}
+
+	/** Add a player to the list */
+	public void add(IPlayer player) {
 	    this.list.put(player, new Double(0));
 	}
 
 	/** Get the current player index */
-	protected IPlayer get(int index) {
+	public IPlayer get(int index) {
 	    if ((index > -1) && (index <= this.list.size())) {
-		return (IPlayer) this.list.keySet().toArray()[0];
+		return (IPlayer) this.getList().toArray()[0];
 	    }
 	    return null;
 	}
 
 	/** Get a new iterator */
-	protected PlayerIterator iterator(boolean wrapAround) {
+	public PlayerIterator iterator(boolean wrapAround) {
 	    return new PlayerIterator(wrapAround);
 	}
 
 	/** Add points to the all-games counter */
-	protected void addPoints(IPlayer player, Double pointsToAdd) {
+	public void addPoints(IPlayer player, Double pointsToAdd) {
 	    Double currentPoints = this.getPoints(player);
 	    this.list.put(player, currentPoints + pointsToAdd);
 	}
 
 	/** Get the all-games points for a player */
-	protected double getPoints(IPlayer player) {
+	public double getPoints(IPlayer player) {
 	    return this.list.get(player);
 	}
 
 	/** Get the list of players ranked by their overall game-points */
-	protected Map<IPlayer, Double> getRanked() {
-	    // sort
+	public Map<IPlayer, Double> getRanked() {
 	    List<IPlayer> keys = new ArrayList<IPlayer>(this.list.size());
 	    keys.addAll(this.list.keySet());
-	    Collections.sort(keys, new Comparator<IPlayer>() {
-		@Override
-		public int compare(IPlayer o1, IPlayer o2) {
-		    Double p1 = Player.this.list.get(o1);
-		    Double p2 = Player.this.list.get(o2);
-		    return p1.compareTo(p2);
-		}
-	    });
-
+	    Collections.sort(keys, this.playerComparator);
 	    Map<IPlayer, Double> rankedMap = new HashMap<IPlayer, Double>();
 	    for (IPlayer player : keys) {
 		rankedMap.put(player, this.list.get(player));
@@ -168,28 +187,26 @@ public class TableLogic {
 	}
 
 	/** Amount of players on this table */
-	protected int size() {
+	public int amount() {
 	    return this.list.size();
 	}
 
 	/**
 	 * Fire an event to all registered players.
 	 * 
-	 * TODO: data needs to be generalized
-	 * 
 	 * @param event
 	 *            The event
 	 * @param data
 	 *            Some sort of data associated with an event
 	 */
-	protected void fireEvent(Event event, Object data) {
+	private void fireEvent(Event event, Object data) {
 	    for (IPlayer player : this.list.keySet()) {
 		player.handleTableEvent(event, data);
 	    }
 	}
 
 	/** @see TableLogic.Player#fireEvent(Event, Object) */
-	public void fireEvent(Event event) {
+	private void fireEvent(Event event) {
 	    this.fireEvent(event, null);
 	}
 
@@ -200,14 +217,16 @@ public class TableLogic {
 	 * 
 	 */
 	private class PlayerIterator implements Iterator<IPlayer> {
+	    // pointer to current player
 	    private byte pointer = -1;
+	    // pointer to the player who closed the current round
 	    private byte closingPointer = -1;
 	    // restart iteration from the beginning, if we hit the end?
 	    private boolean wrapAround = false;
 	    // has last next() call wrapped the pointer?
 	    private boolean hasWrapped = false;
 	    // get the IPlayer objects as array for easy index handling
-	    private IPlayer[] player;
+	    private List<IPlayer> player;
 	    // track, if we have already build the player array
 	    private final boolean initialized = false;
 
@@ -216,17 +235,17 @@ public class TableLogic {
 	     *            If true, the iterator will restart at the beginning,
 	     *            if hitting the end of the player list
 	     */
-	    public PlayerIterator(boolean wrapAround) {
+	    private PlayerIterator(boolean wrapAround) {
 		this.wrapAround = wrapAround;
 	    }
 
-	    protected void initialize() {
-		int i = 0;
-		this.player = new IPlayer[TableLogic.this.player.list.size()];
-		for (IPlayer player : TableLogic.this.player.list.keySet()) {
-		    this.player[i] = player;
-		    i++;
-		}
+	    /**
+	     * Initialize the iterator. This must be called before actually
+	     * using it
+	     */
+	    private void initialize() {
+		this.player = Collections
+			.unmodifiableList(TableLogic.this.player.getList());
 	    }
 
 	    @Override
@@ -240,7 +259,7 @@ public class TableLogic {
 		    return true;
 		}
 
-		if ((this.pointer + 1) < this.player.length) {
+		if ((this.pointer + 1) < this.player.size()) {
 		    if ((this.pointer + 1) == this.closingPointer) {
 			return false;
 		    }
@@ -249,7 +268,7 @@ public class TableLogic {
 		return false;
 	    }
 
-	    protected void setPointer(int pointer) {
+	    private void setPointer(int pointer) {
 		this.pointer = (byte) pointer;
 	    }
 
@@ -262,7 +281,7 @@ public class TableLogic {
 		if (this.hasNext()) {
 		    this.pointer++;
 
-		    if (this.pointer == this.player.length) {
+		    if (this.pointer == this.player.size()) {
 			this.hasWrapped = true;
 			this.reset();
 			this.pointer++;
@@ -271,14 +290,14 @@ public class TableLogic {
 		    }
 
 		    IPlayer player = this.get();
-		    TableLogic.this.player.moveFinished = false;
+		    TableLogic.this.player.finishedTurn = false;
 		    return player;
 		}
 		return null;
 	    }
 
 	    /** Resets the iterator to the beginning of the player-list */
-	    protected void reset() {
+	    private void reset() {
 		this.pointer = -1;
 	    }
 
@@ -288,7 +307,7 @@ public class TableLogic {
 	    }
 
 	    /** Index of the current player in the player list */
-	    protected byte getIndex() {
+	    private byte getIndex() {
 		if (this.initialized == false) {
 		    this.initialize();
 		}
@@ -296,8 +315,8 @@ public class TableLogic {
 	    }
 
 	    /** Get the player the iterator is currently pointing at */
-	    protected IPlayer get() {
-		return this.player[this.getIndex()];
+	    private IPlayer get() {
+		return this.player.get(this.getIndex());
 	    }
 
 	    /**
@@ -306,7 +325,7 @@ public class TableLogic {
 	     * @return Any second try to close will be signaled by returning
 	     *         false;
 	     */
-	    protected boolean setAsClosing() {
+	    private boolean setAsClosing() {
 		if (this.closingPointer == -1) {
 		    this.closingPointer = this.getIndex();
 		    return true;
@@ -318,7 +337,7 @@ public class TableLogic {
 	     * @return True, if while getting the current player the iterator
 	     *         has wrapped around
 	     */
-	    public boolean hasWrapped() {
+	    private boolean hasWrapped() {
 		return this.hasWrapped;
 	    }
 	}
@@ -331,9 +350,6 @@ public class TableLogic {
      * 
      */
     public class Game implements Iterator<IPlayer> {
-	// after how many rounds should the game be interrupted? (to catch
-	// non-enRoundsding games)
-	private int maxRoundsToPlay = 32;
 	// is game finished?
 	private boolean finished = false;
 	// the number of games to play in turn
@@ -346,7 +362,7 @@ public class TableLogic {
 	public TableLogic.Game.Round round;
 
 	/** Empty constructor */
-	protected Game() {
+	private Game() {
 	    this.round = new Round();
 	}
 
@@ -356,7 +372,7 @@ public class TableLogic {
 	 * @param numberOfGames
 	 *            Number of games to play
 	 */
-	protected Game(int numberOfGames) {
+	private Game(int numberOfGames) {
 	    this.numberOfGamesToPlay = numberOfGames;
 	    this.round = new Round();
 	}
@@ -369,18 +385,9 @@ public class TableLogic {
 	 * @param maxRoundsToPlay
 	 *            Maximum number of rounds to play per game
 	 */
-	protected Game(int numberOfGames, int maxRoundsToPlay) {
+	private Game(int numberOfGames, int maxRoundsToPlay) {
 	    this.numberOfGamesToPlay = numberOfGames;
 	    this.round = new Round(maxRoundsToPlay);
-	}
-
-	/**
-	 * Initialize the game. This should be called, if all players finished
-	 * joining the table.
-	 */
-	protected void initialize() {
-	    // when & who?
-	    this.round.initialize();
 	}
 
 	/** Check if there's a next game we want to play */
@@ -389,6 +396,7 @@ public class TableLogic {
 	    if ((this.currentGameNumber + 1) <= this.numberOfGamesToPlay) {
 		return true;
 	    }
+	    TableLogic.this.player.fireEvent(TableLogic.Event.GAME_FINISHED);
 	    this.finished = true;
 	    return false;
 	}
@@ -401,15 +409,16 @@ public class TableLogic {
 	public IPlayer next() {
 	    this.currentGameNumber++;
 	    if (this.currentGameNumber > this.numberOfGamesToPlay) {
+		TableLogic.this.player
+			.fireEvent(TableLogic.Event.GAME_FINISHED);
 		this.finished = true;
 	    }
 	    this.round.reset();
 	    this.startingPlayer = this.players.next();
 	    this.round.setCurrentPlayer(this.startingPlayer);
 	    TableLogic.this.game.round.setCurrentPlayer(this.startingPlayer);
-	    TableLogic.this.table.cardStackTable = new CardStack(false);
-	    TableLogic.this.table.cardStack = new CardStack(true);
-	    TableLogic.this.dealOutCards(this.startingPlayer);
+	    TableLogic.this.table.resetCards();
+	    TableLogic.this.table.dealOutCards(this.startingPlayer);
 	    return this.startingPlayer;
 	}
 
@@ -418,6 +427,7 @@ public class TableLogic {
 	    return this.finished;
 	}
 
+	/** Get the current game number that is played */
 	public int current() {
 	    return this.currentGameNumber;
 	}
@@ -427,16 +437,14 @@ public class TableLogic {
 	    // not implemented
 	}
 
-	protected void setNumberOfGamesToPlay(int numberOfGamesToPlay) {
+	/** Set the number of games to play */
+	public void setNumberOfGamesToPlay(int numberOfGamesToPlay) {
 	    this.numberOfGamesToPlay = numberOfGamesToPlay;
 	}
 
-	public int getMaxRoundsToPlay() {
-	    return this.maxRoundsToPlay;
-	}
-
-	protected void setMaxRoundsToPlay(int maxRoundsToPlay) {
-	    this.maxRoundsToPlay = maxRoundsToPlay;
+	/** Get the number of games to play */
+	public int getNumberOfGamesToPlay() {
+	    return this.numberOfGamesToPlay;
 	}
 
 	/**
@@ -446,7 +454,7 @@ public class TableLogic {
 	 * 
 	 */
 	public class Round implements Iterator<Integer> {
-	    private byte currentRound = 1;
+	    private byte currentRound = -1;
 	    private int maxNumberOfRounds = 32;
 	    private boolean finished = false;
 	    private final TableLogic.Player.PlayerIterator players;
@@ -469,10 +477,20 @@ public class TableLogic {
 		this.maxNumberOfRounds = maxNumberOfRounds;
 	    }
 
+	    /** Get the number of maximum rounds to play per game */
+	    public int getMaxLength() {
+		return this.maxNumberOfRounds;
+	    }
+
+	    /** Set the number of maximum rounds to play per game */
+	    protected void setMaxLength(int maxRoundsToPlay) {
+		this.maxNumberOfRounds = maxRoundsToPlay;
+	    }
+
 	    /** Set the current active player */
 	    protected void setCurrentPlayer(IPlayer playerToSet) {
 		byte i = 0;
-		for (IPlayer player : TableLogic.this.player.list.keySet()) {
+		for (IPlayer player : TableLogic.this.player.getList()) {
 		    if (player.equals(playerToSet)) {
 			this.players.setPointer(i);
 			this.currentPlayer = playerToSet;
@@ -487,6 +505,8 @@ public class TableLogic {
 	     * players have joined the table.
 	     */
 	    protected void initialize() {
+		this.currentRound = -1;
+		this.finished = false;
 		this.currentPlayer = this.players.next();
 	    }
 
@@ -497,6 +517,7 @@ public class TableLogic {
 	     */
 	    public IPlayer nextPlayer() {
 		this.currentPlayer = this.players.next();
+		TableLogic.this.player.setTookAction(false);
 		if (this.players.hasWrapped()) {
 		    // FIXME: really next on wrap?
 		    this.next();
@@ -516,13 +537,9 @@ public class TableLogic {
 	    /** Is there a next round left to play? */
 	    @Override
 	    public boolean hasNext() {
-		if (this.finished) {
-		    return false;
-		}
-		if ((this.currentRound + 1) < this.maxNumberOfRounds) {
+		if ((this.currentRound + 1) <= this.maxNumberOfRounds) {
 		    return true;
 		}
-		this.finished = true;
 		return false;
 	    }
 
@@ -530,7 +547,7 @@ public class TableLogic {
 	    protected void reset() {
 		this.closingPlayer = null;
 		this.currentPlayer = null;
-		this.currentRound = 1;
+		this.currentRound = 0;
 		this.finished = false;
 	    }
 
@@ -540,12 +557,12 @@ public class TableLogic {
 	    }
 
 	    /** Current round number */
-	    public int current() {
+	    public int getCurrent() {
 		return this.currentRound;
 	    }
 
 	    /** Current player will close this round */
-	    protected boolean close() {
+	    public boolean close() {
 		if (this.players.setAsClosing()) {
 		    this.closingPlayer = this.players.get();
 		    return true;
@@ -554,12 +571,12 @@ public class TableLogic {
 	    }
 
 	    /** Test, if a given player has closed the round */
-	    public boolean hasClosed(IPlayer player) {
+	    public boolean isClosedBy(IPlayer player) {
 		return player.equals(this.closingPlayer);
 	    }
 
 	    /** Get the current player of this round */
-	    protected IPlayer currentPlayer() {
+	    public IPlayer getCurrentPlayer() {
 		return this.currentPlayer;
 	    }
 
@@ -571,6 +588,7 @@ public class TableLogic {
     }
 
     private static class Cards {
+	/** Verifys the goal state of a given list od stack */
 	protected static boolean verifyGoal(byte[] cards) {
 	    CardStack userCardStack;
 	    byte cardsCount;
@@ -616,14 +634,14 @@ public class TableLogic {
 	private boolean closed = false;
 	// Card stack owned by this table (stack will be full, i.e. has all
 	// cards)
-	protected CardStack cardStack = new CardStack(true);
+	private CardStack cardStack = new CardStack(true);
 	// cards on the table
-	public CardStack cardStackTable = new CardStack(false);
+	private CardStack cardStackTable = new CardStack(false);
 
 	/**
 	 * Close player participation opportunity and prepare game start.
 	 */
-	public void close() {
+	protected void close() {
 	    if (this.closed != true) {
 		TableLogic.this.player.fireEvent(Event.TABLE_CLOSED, null);
 		this.closed = true;
@@ -631,13 +649,80 @@ public class TableLogic {
 		if (Debug.debug == true) {
 		    Debug.println(this.getClass(), String.format(
 			    "Players: %d  Maximum rounds: %d",
-			    TableLogic.this.player.size(),
-			    TableLogic.this.game.maxRoundsToPlay));
+			    TableLogic.this.player.amount(),
+			    TableLogic.this.game.round.getMaxLength()));
 		}
 	    }
 	}
 
-	protected boolean isClosed() {
+	/**
+	 * Renew the card stack of this table. This should be called, if a new
+	 * game should be started.
+	 */
+	protected void resetCards() {
+	    this.cardStackTable = new CardStack(false);
+	    this.cardStack = new CardStack(true);
+	}
+
+	/** Returns a CardStack with the cards currently on the table */
+	public CardStack getCardStack() {
+	    return new CardStack(this.cardStackTable.getCards());
+	}
+
+	/**
+	 * Generate a random card set for a player
+	 * 
+	 * @return The randomly generated card set
+	 * @throws Exception
+	 */
+	protected byte[] getPlayerCardSet() {
+	    return new byte[] { this.cardStack.card.getRandom(),
+		    this.cardStack.card.getRandom(),
+		    this.cardStack.card.getRandom() };
+	}
+
+	/**
+	 * Deliver cards to players
+	 */
+	protected void dealOutCards(IPlayer beginningPlayer) {
+	    byte[] initialCardSet = new byte[3];
+
+	    for (IPlayer player : TableLogic.this.player.getList()) {
+		if (player == beginningPlayer) {
+		    initialCardSet = this.getPlayerCardSet();
+		    player.setCards(initialCardSet);
+		} else {
+		    // pass initial cards to player
+		    player.setCards(this.getPlayerCardSet());
+		}
+	    }
+
+	    // deal out a second set of cards for the first player, if he want
+	    // so
+	    if (beginningPlayer.keepCardSet() == false) {
+		// update cards on table
+		TableLogic.this.player.fireEvent(
+			Event.INITIAL_CARDSTACK_DROPPED, initialCardSet);
+		TableLogic.this.proxyInteractionEvent(
+			Action.DROP_CARDSTACK_INITIAL, initialCardSet);
+		this.cardStackTable.card.add(initialCardSet);
+		beginningPlayer.setCards(this.getPlayerCardSet());
+	    } else {
+		// player took first cards - make a second public
+		byte cards[] = this.getPlayerCardSet();
+		TableLogic.this.proxyInteractionEvent(
+			Action.INITIAL_CARDSTACK_PICKED, null);
+		// update cards on table
+		this.cardStackTable.card.add(cards);
+	    }
+	}
+
+	/**
+	 * Check if table is closed (no more players are able to join)
+	 * 
+	 * @return True if closed
+	 */
+	public boolean isClosed() {
 	    return this.closed;
 	}
 
@@ -650,7 +735,7 @@ public class TableLogic {
 	 */
 	public void addPlayer(final IPlayer player) throws Exception {
 	    if ((TableLogic.this.table.isClosed())
-		    || (TableLogic.this.player.size() == MAX_PLAYER)) {
+		    || (TableLogic.this.player.amount() == MAX_PLAYER)) {
 		TableLogic.this.table.close(); // just to be sure
 		throw new Exception("Table is closed! No more player allowed.");
 	    }
@@ -682,53 +767,6 @@ public class TableLogic {
     }
 
     /**
-     * Deliver cards to players
-     */
-    private void dealOutCards(IPlayer beginningPlayer) {
-	byte[] initialCardSet = new byte[3];
-
-	for (IPlayer player : this.player.list.keySet()) {
-	    if (player == beginningPlayer) {
-		initialCardSet = this.getPlayerCardSet();
-		player.setCards(initialCardSet);
-	    } else {
-		// pass initial cards to player
-		player.setCards(this.getPlayerCardSet());
-	    }
-	}
-
-	// deal out a second set of cards for the first player, if he want so
-	if (beginningPlayer.keepCardSet() == false) {
-	    // update cards on table
-	    this.player.fireEvent(Event.INITIAL_CARDSTACK_DROPPED,
-		    initialCardSet);
-	    TableLogic.this.proxyInteractionEvent(
-		    Action.DROP_CARDSTACK_INITIAL, initialCardSet);
-	    this.table.cardStackTable.card.add(initialCardSet);
-	    beginningPlayer.setCards(this.getPlayerCardSet());
-	} else {
-	    // player took first cards - make a second public
-	    byte cards[] = this.getPlayerCardSet();
-	    TableLogic.this.proxyInteractionEvent(
-		    Action.INITIAL_CARDSTACK_PICKED, null);
-	    // update cards on table
-	    this.table.cardStackTable.card.add(cards);
-	}
-    }
-
-    /**
-     * Generate a random card set for a player
-     * 
-     * @return The randomly generated card set
-     * @throws Exception
-     */
-    private byte[] getPlayerCardSet() {
-	return new byte[] { this.table.cardStack.card.getRandom(),
-		this.table.cardStack.card.getRandom(),
-		this.table.cardStack.card.getRandom() };
-    }
-
-    /**
      * Player callback function to respond to events fired by the table.
      * 
      * @param action
@@ -743,7 +781,7 @@ public class TableLogic {
 	case DROP_CARD:
 	    CardStack.checkCard((byte) data);
 	    if (this.table.cardStackTable.card.add((byte) data)) {
-		this.player.hasTakenAnAction = true;
+		this.player.setTookAction(true);
 		TableLogic.this.player.fireEvent(Event.CARD_DROPPED, data);
 		this.proxyInteractionEvent(action, data);
 		return true;
@@ -755,18 +793,18 @@ public class TableLogic {
 	    if (Cards.verifyGoal(userCards) && this.game.round.close()) {
 		this.game.round.close();
 		TableLogic.this.player.fireEvent(Event.GAME_CLOSED);
-		this.player.hasTakenAnAction = true;
+		this.player.setTookAction(true);
 		this.proxyInteractionEvent(action, data);
 		return true;
 	    }
 	    return false;
 	case MOVE_FINISHED:
-	    this.player.moveFinished = true;
+	    this.player.finishedTurn = true;
 	    this.proxyInteractionEvent(action, data);
 	    return true;
 	case PICK_CARD:
 	    if (this.table.cardStackTable.card.remove((byte) data)) {
-		this.player.hasTakenAnAction = true;
+		this.player.setTookAction(true);
 		this.proxyInteractionEvent(action, data);
 		return true;
 	    }
@@ -788,5 +826,6 @@ public class TableLogic {
     /** Setup the table logic */
     public void initialize() {
 	this.table.close();
+	this.player.fireEvent(TableLogic.Event.GAME_START);
     }
 }
