@@ -61,6 +61,8 @@ public class TableLogic {
 	PICK_CARD,
 	// Player wants to pick a card from the table
 	// Data: (byte) card
+	INITIAL_CARDSTACK_PICKED,
+	// A player has picked the initial card stack
     }
 
     public TableLogic(ITable tableController) {
@@ -121,7 +123,6 @@ public class TableLogic {
 	PlayerComparator playerComparator = new PlayerComparator();
 
 	protected void add(IPlayer player) {
-	    System.out.println("#ADD");
 	    this.list.put(player, new Double(0));
 	}
 
@@ -411,6 +412,7 @@ public class TableLogic {
 	    }
 	    this.round.reset();
 	    this.startingPlayer = this.players.next();
+	    this.round.setCurrentPlayer(this.startingPlayer);
 	    TableLogic.this.game.round.setCurrentPlayer(this.startingPlayer);
 	    TableLogic.this.table.cardStackTable = new CardStack(false);
 	    TableLogic.this.table.cardStack = new CardStack(true);
@@ -474,11 +476,13 @@ public class TableLogic {
 		this.maxNumberOfRounds = maxNumberOfRounds;
 	    }
 
+	    /** Set the current active player */
 	    protected void setCurrentPlayer(IPlayer playerToSet) {
 		byte i = 0;
 		for (IPlayer player : TableLogic.this.player.list.keySet()) {
 		    if (player.equals(playerToSet)) {
 			this.players.setPointer(i);
+			this.currentPlayer = playerToSet;
 			break;
 		    }
 		    i++;
@@ -675,7 +679,8 @@ public class TableLogic {
 
 	/** Get the list of players currently on this table */
 	public List<IPlayer> getPlayer() {
-	    List playerList = new ArrayList(TableLogic.this.player.list.size());
+	    List<IPlayer> playerList = new ArrayList<IPlayer>(
+		    TableLogic.this.player.list.size());
 	    for (IPlayer player : TableLogic.this.player.list.keySet()) {
 		playerList.add(player);
 	    }
@@ -704,12 +709,15 @@ public class TableLogic {
 	    // update cards on table
 	    this.player.fireEvent(Event.INITIAL_CARDSTACK_DROPPED,
 		    initialCardSet);
+	    TableLogic.this.proxyInteractionEvent(
+		    Action.DROP_CARDSTACK_INITIAL, initialCardSet);
 	    this.table.cardStackTable.card.add(initialCardSet);
 	    beginningPlayer.setCards(this.getPlayerCardSet());
 	} else {
 	    // player took first cards - make a second public
 	    byte cards[] = this.getPlayerCardSet();
-	    // this.firePlayerEvent(Event.INITIAL_CARDSTACK_DROPPED, cards);
+	    TableLogic.this.proxyInteractionEvent(
+		    Action.INITIAL_CARDSTACK_PICKED, null);
 	    // update cards on table
 	    this.table.cardStackTable.card.add(cards);
 	}

@@ -140,6 +140,9 @@ public class DefaultTable extends AbstractTable {
 	    this.logWriter.player("picked card %s",
 		    this.cardStack.card.toString((byte) data));
 	    break;
+	case INITIAL_CARDSTACK_PICKED:
+	    this.logWriter.player("picked the initial card set");
+	    break;
 	}
     }
 }
