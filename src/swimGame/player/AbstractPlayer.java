@@ -109,9 +109,6 @@ abstract class AbstractPlayer implements IPlayer {
 
     @Override
     public byte[] getCards() {
-	if (this.gameIsFinished == false) {
-	    return null;
-	}
 	return this.cardStack.getCards();
     }
 

@@ -588,7 +588,7 @@ public class TableLogic {
     }
 
     private static class Cards {
-	/** Verifys the goal state of a given list od stack */
+	/** Verifies the goal state of a given list of cards */
 	protected static boolean verifyGoal(byte[] cards) {
 	    CardStack userCardStack;
 	    byte cardsCount;
