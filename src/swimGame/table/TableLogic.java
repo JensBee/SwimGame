@@ -9,7 +9,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import swimGame.out.Console;
 import swimGame.out.Debug;
 import swimGame.player.DefaultPlayer;
 import swimGame.player.IPlayer;
@@ -106,7 +105,6 @@ public class TableLogic {
 	private class PlayerComparator implements Comparator<IPlayer> {
 	    @Override
 	    public int compare(IPlayer o1, IPlayer o2) {
-		System.out.println(o1.toString() + "<<" + o2.toString() + "<<");
 		Double p1 = TableLogic.Player.this.list.get(o1);
 		Double p2 = TableLogic.Player.this.list.get(o1);
 		if (p1 < p2) {
@@ -275,9 +273,6 @@ public class TableLogic {
 		    }
 
 		    IPlayer player = this.get();
-		    // TODO: this should go into table base
-		    Console.println(TableLogic.CNAME,
-			    String.format("It's your turn %s", player));
 		    TableLogic.this.player.moveFinished = false;
 		    return player;
 		}

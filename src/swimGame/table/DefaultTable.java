@@ -52,6 +52,8 @@ public class DefaultTable extends AbstractTable {
 		this.logWriter.write("Cards: "
 			+ this.tableLogic.table.cardStackTable.toString());
 		this.tableLogic.player.hasTakenAnAction = false;
+
+		this.logWriter.write("It's your turn %s", this.currentPlayer);
 		this.currentPlayer.doMove(this.tableLogic.table.cardStackTable
 			.getCards());
 
