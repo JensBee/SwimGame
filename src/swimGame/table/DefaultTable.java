@@ -103,11 +103,8 @@ public class DefaultTable extends AbstractTable {
 		CardStack playerCardStack = new CardStack(playerCards);
 		this.tableLogic.player.addPoints(player,
 			playerCardStack.getValue());
-		this.logWriter.write(
-			" %s's cards: %s value: %.0f overall: %.0f",
-			playerName, playerCardStack.toString(),
-			playerCardStack.getValue(),
-			this.tableLogic.player.getPoints(player));
+		this.logWriter.write(" %s's cards: %s value: %.0f", playerName,
+			playerCardStack.toString(), playerCardStack.getValue());
 	    }
 	}
 
