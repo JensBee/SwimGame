@@ -1,9 +1,9 @@
-package swimGame.out;
+package swimgame.out;
 
 import java.io.PrintStream;
 
-import swimGame.player.DefaultPlayer;
-import swimGame.player.IPlayer;
+import swimgame.player.DefaultPlayer;
+import swimgame.player.IPlayer;
 
 public class Debug {
 	public static boolean debug = false;

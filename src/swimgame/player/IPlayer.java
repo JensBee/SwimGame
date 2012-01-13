@@ -1,6 +1,6 @@
-package swimGame.player;
+package swimgame.player;
 
-import swimGame.table.TableLogic;
+import swimgame.table.TableLogic;
 
 /**
  * Interface for a player to be able to join the game. A Player model can be

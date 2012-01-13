@@ -1,9 +1,9 @@
-package swimGame.table;
+package swimgame.table;
 
 import java.util.Formatter;
 
-import swimGame.out.Console;
-import swimGame.player.IPlayer;
+import swimgame.out.Console;
+import swimgame.player.IPlayer;
 
 public abstract class AbstractTable implements ITable {
     // name for nice console out

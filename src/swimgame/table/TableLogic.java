@@ -1,4 +1,4 @@
-package swimGame.table;
+package swimgame.table;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -9,9 +9,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import swimGame.out.Debug;
-import swimGame.player.DefaultPlayer;
-import swimGame.player.IPlayer;
+import swimgame.out.Debug;
+import swimgame.player.DefaultPlayer;
+import swimgame.player.IPlayer;
 
 /**
  * Self contained class that handles all the logic needed to get the game

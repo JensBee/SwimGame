@@ -1,8 +1,8 @@
-package swimGame.out;
+package swimgame.out;
 
-import swimGame.player.IPlayer;
+import swimgame.player.IPlayer;
 
-public class Console {
+public final class Console {
     private static class ConsoleSingleton {
 	public static final Console INSTANCE = new Console();
     }

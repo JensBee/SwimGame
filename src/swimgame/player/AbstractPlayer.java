@@ -1,21 +1,21 @@
-package swimGame.player;
+package swimgame.player;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-import swimGame.out.Console;
-import swimGame.out.Debug;
-import swimGame.table.CardStack;
-import swimGame.table.TableLogic;
+import swimgame.out.Console;
+import swimgame.out.Debug;
+import swimgame.table.CardStack;
+import swimgame.table.TableLogic;
 
 /**
  * A player playing the game. This abstract class handles the basic player
  * interaction with the table. The real game logic must be implemented by the
  * driving classes.
  * 
- * @see swimGame.table.DefaultTable
+ * @see swimgame.table.DefaultTable
  * @author Jens Bertram <code@jens-bertram.net>
  * 
  */

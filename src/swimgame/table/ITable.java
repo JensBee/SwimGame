@@ -1,6 +1,6 @@
-package swimGame.table;
+package swimgame.table;
 
-import swimGame.player.IPlayer;
+import swimgame.player.IPlayer;
 
 public interface ITable {
     /**

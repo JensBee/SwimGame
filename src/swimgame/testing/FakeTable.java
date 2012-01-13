@@ -1,7 +1,7 @@
-package swimGame.testing;
+package swimgame.testing;
 
-import swimGame.table.AbstractTable;
-import swimGame.table.TableLogic.Action;
+import swimgame.table.AbstractTable;
+import swimgame.table.TableLogic.Action;
 
 public class FakeTable extends AbstractTable {
 

@@ -1,10 +1,10 @@
-package swimGame.player;
+package swimgame.player;
 
-import swimGame.out.Debug;
-import swimGame.table.CardStack;
-import swimGame.table.CardStack.CardIterator;
-import swimGame.table.DefaultTable;
-import swimGame.table.TableLogic;
+import swimgame.out.Debug;
+import swimgame.table.CardStack;
+import swimgame.table.DefaultTable;
+import swimgame.table.TableLogic;
+import swimgame.table.CardStack.CardIterator;
 
 /**
  * A player playing the game. The default implementation of a player.

@@ -1,10 +1,10 @@
-package swimGame;
+package swimgame;
 
-import swimGame.out.Console;
-import swimGame.out.Debug;
-import swimGame.player.HumanPlayer;
-import swimGame.table.DefaultTable;
-import swimGame.table.TableLogic;
+import swimgame.out.Console;
+import swimgame.out.Debug;
+import swimgame.player.HumanPlayer;
+import swimgame.table.DefaultTable;
+import swimgame.table.TableLogic;
 
 public class SwimGame {
     private static final double VERSION = 0.1;

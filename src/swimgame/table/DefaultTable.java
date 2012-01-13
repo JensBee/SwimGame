@@ -1,11 +1,11 @@
-package swimGame.table;
+package swimgame.table;
 
 import java.io.IOException;
 
-import swimGame.out.Console;
-import swimGame.out.Debug;
-import swimGame.player.IPlayer;
-import swimGame.table.TableLogic.Action;
+import swimgame.out.Console;
+import swimgame.out.Debug;
+import swimgame.player.IPlayer;
+import swimgame.table.TableLogic.Action;
 
 public class DefaultTable extends AbstractTable {
     // should we wait for input after each round?

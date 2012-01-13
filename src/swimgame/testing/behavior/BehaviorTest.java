@@ -1,10 +1,10 @@
-package swimGame.testing.behavior;
+package swimgame.testing.behavior;
 
-import swimGame.out.Debug;
-import swimGame.player.DefaultPlayer;
-import swimGame.player.IPlayer;
-import swimGame.table.DefaultTable;
-import swimGame.table.TableLogic;
+import swimgame.out.Debug;
+import swimgame.player.DefaultPlayer;
+import swimgame.player.IPlayer;
+import swimgame.table.DefaultTable;
+import swimgame.table.TableLogic;
 
 public class BehaviorTest {
     // store the number of won games (mutated player first)

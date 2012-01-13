@@ -1,13 +1,13 @@
-package swimGame.player;
+package swimgame.player;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-import swimGame.out.Console;
-import swimGame.out.Debug;
-import swimGame.table.CardStack;
-import swimGame.table.TableLogic;
+import swimgame.out.Console;
+import swimgame.out.Debug;
+import swimgame.table.CardStack;
+import swimgame.table.TableLogic;
 
 public class HumanPlayer extends AbstractPlayer {
     private static final String CARDS_FORMATSTRING = "%5s %9s";

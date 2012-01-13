@@ -1,10 +1,10 @@
-package swimGame.testing;
+package swimgame.testing;
 
-import swimGame.out.Debug;
-import swimGame.player.DefaultPlayer;
-import swimGame.player.IPlayer;
-import swimGame.table.CardStack;
-import swimGame.table.TableLogic;
+import swimgame.out.Debug;
+import swimgame.player.DefaultPlayer;
+import swimgame.player.IPlayer;
+import swimgame.table.CardStack;
+import swimgame.table.TableLogic;
 
 public class PlayerCardRating {
 
