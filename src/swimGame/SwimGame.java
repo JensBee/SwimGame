@@ -7,7 +7,7 @@ import swimGame.table.DefaultTable;
 import swimGame.table.TableLogic;
 
 public class SwimGame {
-    private static final double version = 0.1;
+    private static final double VERSION = 0.1;
     private static boolean humanPlayer = false;
 
     /** General program termination on errors */
@@ -17,13 +17,14 @@ public class SwimGame {
     }
 
     /** General program termination on errors */
-    private static void exitWithError(String message) {
+    private static void exitWithError(final String message) {
 	System.err.println(message);
 	System.exit(1);
     }
 
-    private static String formatHelpString(String option, String description) {
-	String format = "%-15s   %-60s";
+    private static String formatHelpString(final String option,
+	    final String description) {
+	final String format = "%-15s   %-60s";
 	return String.format(format, option, description);
     }
 
@@ -56,7 +57,7 @@ public class SwimGame {
 	int numberOfGamesToPlay = 1;
 	int maxRoundsToPlay = 32;
 
-	Console.println("SWIMMING.GAME.O°o°O°o.\nv" + SwimGame.version
+	Console.println("SWIMMING.GAME.O°o°O°o.\nv" + SwimGame.VERSION
 		+ ", 2011 Jens Bertram <code@jens-bertram.net>\n");
 
 	int i = 0;
@@ -109,10 +110,10 @@ public class SwimGame {
 	if (Debug.debug) {
 	    Console.println("INFO: Debugging messages are turned on");
 	}
-	if (Console.ask == false) {
+	if (!Console.ask) {
 	    Console.println("INFO: Won't ask any questions");
 	}
-	int gamePlayer = numberOfPLayers + ((humanPlayer) ? 1 : 0);
+	final int gamePlayer = numberOfPLayers + ((humanPlayer) ? 1 : 0);
 	Console.println(String.format(
 		"INFO: Game will be played with %d players", gamePlayer));
 	// TODO: get max rounds

@@ -29,7 +29,7 @@ public class DefaultPlayer extends AbstractPlayer {
     // the round we're playing
     // private int gameRound = 0;
     // tracks, witch colors were dropped during the game
-    protected byte[] dropColorIndex = new byte[CardStack.CARDS_MAX_COLOR];
+    private byte[] dropColorIndex = new byte[CardStack.CARDS_MAX_COLOR];
 
     // behavior defaults
     public enum Behavior {
@@ -47,7 +47,7 @@ public class DefaultPlayer extends AbstractPlayer {
 
 	protected byte value;
 
-	Behavior(int value) {
+	Behavior(final int value) {
 	    this.value = (byte) value;
 	}
 
@@ -55,7 +55,7 @@ public class DefaultPlayer extends AbstractPlayer {
 	    return this.value;
 	}
 
-	public void setValue(byte value) {
+	public void setValue(final byte value) {
 	    this.value = value;
 	}
     }
@@ -64,11 +64,11 @@ public class DefaultPlayer extends AbstractPlayer {
     private CardRating cardRating = null;
     private final StackRating stackRating = new StackRating();
 
-    public DefaultPlayer(TableLogic tableLogic) {
+    public DefaultPlayer(final TableLogic tableLogic) {
 	super(tableLogic);
     }
 
-    public DefaultPlayer(TableLogic tableLogic, String name) {
+    public DefaultPlayer(final TableLogic tableLogic, final String name) {
 	super(tableLogic, name);
     }
 
@@ -102,7 +102,7 @@ public class DefaultPlayer extends AbstractPlayer {
 	 *            Current value
 	 * @return Normalized value
 	 */
-	protected static double normalize(double max, double value) {
+	protected static double normalize(final double max, final double value) {
 	    return Rating.normalize(0, max, value);
 	}
 
@@ -117,7 +117,8 @@ public class DefaultPlayer extends AbstractPlayer {
 	 *            Current value
 	 * @return Normalized value
 	 */
-	protected static double normalize(double min, double max, double value) {
+	protected static double normalize(final double min, final double max,
+		final double value) {
 	    return new Double(((value - min) / (max - min)) * 10);
 	}
     }
@@ -163,7 +164,7 @@ public class DefaultPlayer extends AbstractPlayer {
 	    int same = 0;
 
 	    for (byte stackCard : cardsArray) {
-		if (DefaultPlayer.this.cardStack.hasCard(stackCard) == true) {
+		if (DefaultPlayer.this.cardStack.hasCard(stackCard)) {
 		    same++;
 		    cardValue = cardValue + this.getNormalizedCardRating(card);
 
@@ -177,7 +178,7 @@ public class DefaultPlayer extends AbstractPlayer {
 
 	/** Rate a card based on other cards of the same color */
 	protected double byColor(int card) {
-	    int cardValue = this.rateColorOrType(card,
+	    final int cardValue = this.rateColorOrType(card,
 		    DefaultPlayer.this.cardStack
 			    .getCardsByColor(DefaultPlayer.this.cardStack.card
 				    .getColor(card)),
@@ -193,21 +194,21 @@ public class DefaultPlayer extends AbstractPlayer {
 		maxValue = (value > maxValue) ? value : maxValue;
 	    }
 
-	    if (maxValue != 0) {
+	    if (maxValue == 0) {
+		this.ratings[RATING_COLORFREQUENCY] = 0;
+	    } else {
 		this.ratings[RATING_COLORFREQUENCY] = Rating
 			.normalize(
 				maxValue,
 				DefaultPlayer.this.dropColorIndex[DefaultPlayer.this.cardStack.card
 					.getColor(card)]);
-	    } else {
-		this.ratings[RATING_COLORFREQUENCY] = 0;
 	    }
 	    return this.ratings[RATING_COLORFREQUENCY];
 	}
 
 	/** Rate a card based on it's type and cards of the same type */
 	protected double byType(int card) {
-	    int cardValue = this.rateColorOrType(card,
+	    final int cardValue = this.rateColorOrType(card,
 		    DefaultPlayer.this.cardStack
 			    .getCardsByType(DefaultPlayer.this.cardStack.card
 				    .getType(card)),
@@ -250,7 +251,7 @@ public class DefaultPlayer extends AbstractPlayer {
 	 *            The new value we try to assign
 	 */
 	protected void uprate(CardStack stack, int card, int newValue) {
-	    int oldValue = stack.card.getValue(card);
+	    final int oldValue = stack.card.getValue(card);
 	    stack.card.setValue(card, (byte) (oldValue > newValue ? oldValue
 		    : newValue));
 	}
@@ -260,23 +261,28 @@ public class DefaultPlayer extends AbstractPlayer {
 	 * 
 	 */
 	protected byte getCardRating(int card) {
+	    byte rating;
+
 	    CardStack.checkCard(card);
 	    if (card < CardStack.CARDS_MAX_CARD) {
-		return (byte) card;
+		rating = (byte) card;
+	    } else {
+		rating = (byte) (card - ((card / CardStack.CARDS_MAX_CARD) * CardStack.CARDS_MAX_CARD));
 	    }
-	    return (byte) (card - ((card / CardStack.CARDS_MAX_CARD) * CardStack.CARDS_MAX_CARD));
+	    return rating;
 	}
 
-	/** Get a normalized value of a card */
+	/**
+	 * Get a normalized value of a card
+	 * 
+	 * <pre>
+	 * J, Q, K -> 3; A -> 4 
+	 * 7 -> 0; 8 -> 1; 9 -> 2 (basically their array locations)
+	 * </pre>
+	 */
 	protected int getNormalizedCardRating(int card) {
-	    int value = this.getCardRating(card);
-	    if (value > 2) {
-		// B, D, K -> 3; A -> 4
-		return value < 7 ? 3 : 4;
-	    } else {
-		// 7 -> 0; 8 -> 1; 9 -> 2 (basically their array locations)
-		return value;
-	    }
+	    final int value = this.getCardRating(card);
+	    return (value > 2) ? (value < 7 ? 3 : 4) : value;
 	}
 
 	protected void reset() {
@@ -291,31 +297,34 @@ public class DefaultPlayer extends AbstractPlayer {
 	}
 
 	protected double byGoalDistance(int card) {
+	    double rating;
 	    this.ratings[RATING_GOALDISTANCE] = 0;
 
-	    byte[] distances = DefaultPlayer.this.stackRating
+	    final byte[] distances = DefaultPlayer.this.stackRating
 		    .goalDistance(DefaultPlayer.this.cardStack.getCards());
 
 	    // bad
 	    if (distances[1] == -1) {
 		this.ratings[RATING_GOALDISTANCE] = Rating.normalize(-1, 1,
 			distances[1]);
-		return this.ratings[RATING_GOALDISTANCE];
-	    }
+		rating = this.ratings[RATING_GOALDISTANCE];
+	    } else {
 
-	    double colorValue = 0;
-	    double typeValue = 0;
-	    if (distances[0] == DefaultPlayer.this.cardStack.card
-		    .getColor(card)) {
-		colorValue = Rating.normalize(-1, 1, distances[1]);
-	    } else if (distances[2] == DefaultPlayer.this.cardStack.card
-		    .getType(card)) {
-		typeValue = Rating.normalize(-1, 1, distances[3]);
-	    }
+		double colorValue = 0;
+		double typeValue = 0;
+		if (distances[0] == DefaultPlayer.this.cardStack.card
+			.getColor(card)) {
+		    colorValue = Rating.normalize(-1, 1, distances[1]);
+		} else if (distances[2] == DefaultPlayer.this.cardStack.card
+			.getType(card)) {
+		    typeValue = Rating.normalize(-1, 1, distances[3]);
+		}
 
-	    this.ratings[RATING_GOALDISTANCE] = (colorValue > typeValue) ? colorValue
-		    : typeValue;
-	    return this.ratings[RATING_GOALDISTANCE];
+		this.ratings[RATING_GOALDISTANCE] = (colorValue > typeValue) ? colorValue
+			: typeValue;
+		rating = this.ratings[RATING_GOALDISTANCE];
+	    }
+	    return rating;
 	}
 
 	/**
@@ -416,7 +425,8 @@ public class DefaultPlayer extends AbstractPlayer {
 	    valueType = -1;
 	    for (byte card : cards) {
 		count = 0;
-		int color = DefaultPlayer.this.cardStack.card.getColor(card);
+		final int color = DefaultPlayer.this.cardStack.card
+			.getColor(card);
 		for (byte cardByColor : DefaultPlayer.this.cardStack
 			.getCardsByColor(color)) {
 		    if (DefaultPlayer.this.cardStack.hasCard(cardByColor)) {
@@ -430,7 +440,8 @@ public class DefaultPlayer extends AbstractPlayer {
 		}
 
 		count = 0;
-		int type = DefaultPlayer.this.cardStack.card.getType(card);
+		final int type = DefaultPlayer.this.cardStack.card
+			.getType(card);
 		for (byte cardByType : DefaultPlayer.this.cardStack
 			.getCardsByType(type)) {
 		    if (DefaultPlayer.this.cardStack.hasCard(cardByType)) {
@@ -456,16 +467,19 @@ public class DefaultPlayer extends AbstractPlayer {
 	}
 
 	protected double dropValue(byte[] cards) {
-	    byte[] goalDistances = this.goalDistance(cards);
+	    double value;
+	    final byte[] goalDistances = this.goalDistance(cards);
 	    if ((goalDistances[1] == 0) || (goalDistances[3] == 0)) {
-		return this.byValue();
+		value = this.byValue();
+	    } else {
+		value = StackRating.NO_RESULT;
 	    }
-	    return StackRating.NO_RESULT;
+	    return value;
 	}
 
 	/** Returns the current value of the stack */
 	protected double byValue() {
-	    CardIterator sI = DefaultPlayer.this.cardStack.new CardIterator();
+	    final CardIterator sI = DefaultPlayer.this.cardStack.new CardIterator();
 
 	    double value = 0;
 	    int sameType = 0;
@@ -518,7 +532,7 @@ public class DefaultPlayer extends AbstractPlayer {
 		}
 	    }
 
-	    if (Debug.debug == true) {
+	    if (Debug.debug) {
 		double dMin = CardStack.STACKVALUE_MIN - value;
 		double dMax = CardStack.STACKVALUE_MAX - value;
 		Debug.println(DefaultPlayer.this, String.format(
@@ -558,7 +572,7 @@ public class DefaultPlayer extends AbstractPlayer {
 		    // matches
 		    for (int cardNum = 0; cardNum < CardStack.CARDS_MAX_CARD; cardNum++) {
 			int cardToCheck = cardOffset + cardNum;
-			if (DefaultPlayer.this.cardStack.hasCard(cardToCheck) == false) {
+			if (!DefaultPlayer.this.cardStack.hasCard(cardToCheck)) {
 			    int ratingValue = DefaultPlayer.this.cardRating
 				    .getCardRating(cardToCheck)
 				    + (matches * CardRating.INFLUENCE_SAME_COLOR);
@@ -598,8 +612,8 @@ public class DefaultPlayer extends AbstractPlayer {
 				    for (int fixedTypeCard = 0; fixedTypeCard < CardStack.CARDS_MAX_COLOR; fixedTypeCard++) {
 					int cardToRate = cardNum
 						+ (fixedTypeCard * cardOffset);
-					if (DefaultPlayer.this.cardStack
-						.hasCard(cardToRate) == false) {
+					if (!DefaultPlayer.this.cardStack
+						.hasCard(cardToRate)) {
 					    DefaultPlayer.this.cardRating
 						    .uprate(DefaultPlayer.this.cardStackNeed,
 							    cardToRate,
@@ -683,14 +697,11 @@ public class DefaultPlayer extends AbstractPlayer {
 			: stack.card.getValue(sortedTriple[j]);
 		if (sourceValue >= targetValue) {
 		    // shift content..
-		    switch (j) {
-		    case 0:
+		    if (j == 0) {
 			sortedTriple[2] = sortedTriple[1];
 			sortedTriple[1] = sortedTriple[0];
-			break;
-		    case 1:
+		    } else if (j == 1) {
 			sortedTriple[2] = sortedTriple[1];
-			break;
 		    }
 		    // ..to insert the new
 		    sortedTriple[j] = triple[i];
@@ -737,7 +748,7 @@ public class DefaultPlayer extends AbstractPlayer {
 	this.rateCards();
 
 	// dump rating stack
-	if (Debug.debug == true) {
+	if (Debug.debug) {
 	    Debug.print(this, "My need stack:\n"
 		    + this.cardStackNeed.dump().toString() + "\n");
 	}
@@ -745,7 +756,7 @@ public class DefaultPlayer extends AbstractPlayer {
 	// estimate goal distance
 	byte[] goalDistance = this.stackRating.goalDistance(this.cardStack
 		.getCards());
-	if (Debug.debug == true) {
+	if (Debug.debug) {
 	    if ((goalDistance[0] != -1) || (goalDistance[2] != -1)) {
 		Debug.print(this, "Goal distance(s): ");
 		if (goalDistance[0] > -1) {
@@ -799,7 +810,7 @@ public class DefaultPlayer extends AbstractPlayer {
 	}
 
 	// end game?
-	if ((this.gameIsClosed == false) && (dropValue > StackRating.NO_RESULT)) {
+	if (!this.gameIsClosed && (dropValue > StackRating.NO_RESULT)) {
 	    this.log("*knock!, knock!*");
 	    this.tableLogic.interact(TableLogic.Action.END_CALL,
 		    this.cardStack.getCards());

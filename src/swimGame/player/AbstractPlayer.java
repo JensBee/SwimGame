@@ -1,6 +1,8 @@
 package swimGame.player;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
 import swimGame.out.Console;
@@ -21,7 +23,7 @@ abstract class AbstractPlayer implements IPlayer {
     /** The name of this player */
     protected String name;
     /** Holds a list of predefined player names */
-    private static ArrayList<String> nameList;
+    private static List<String> nameList;
     /** Reference to the table we're playing on */
     protected TableLogic tableLogic;
     // one random generator for all players
@@ -51,16 +53,9 @@ abstract class AbstractPlayer implements IPlayer {
 	}
 	if (AbstractPlayer.nameList == null) {
 	    // we have nine players at max
-	    AbstractPlayer.nameList = new ArrayList<String>(9);
-	    AbstractPlayer.nameList.add("Bob");
-	    AbstractPlayer.nameList.add("Alice");
-	    AbstractPlayer.nameList.add("Carol");
-	    AbstractPlayer.nameList.add("Dave");
-	    AbstractPlayer.nameList.add("Ted");
-	    AbstractPlayer.nameList.add("Eve");
-	    AbstractPlayer.nameList.add("Oscar");
-	    AbstractPlayer.nameList.add("Peggy");
-	    AbstractPlayer.nameList.add("Victor");
+	    AbstractPlayer.nameList = new ArrayList<String>(Arrays.asList(
+		    "Bob", "Alice", "Carol", "Dave", "Ted", "Eve", "Oscar",
+		    "Peggy", "Victor"));
 	}
     }
 
@@ -100,11 +95,6 @@ abstract class AbstractPlayer implements IPlayer {
     @Override
     public String toString() {
 	return this.name;
-    }
-
-    @Override
-    public boolean keepCardSet() {
-	return true;
     }
 
     @Override

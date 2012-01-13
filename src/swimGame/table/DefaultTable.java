@@ -15,7 +15,7 @@ public class DefaultTable extends AbstractTable {
     // a card stack to use some general functions
     private final CardStack cardStack = new CardStack();
     // store the current player mainly for output
-    IPlayer currentPlayer;
+    private IPlayer currentPlayer;
 
     @Override
     public void start() {
@@ -33,11 +33,10 @@ public class DefaultTable extends AbstractTable {
 	    }
 	}
 
-	this.currentPlayer = null;
 	while (this.tableLogic.game.hasNext()) {
 	    this.tableLogic.game.next();
 
-	    while ((this.tableLogic.game.isFinished() == false)
+	    while (!this.tableLogic.game.isFinished()
 		    && this.tableLogic.game.round.hasNext()) {
 
 		Debug.println(String.format("*** Game %d ** Round %d ***",
@@ -56,11 +55,11 @@ public class DefaultTable extends AbstractTable {
 		this.currentPlayer.doMove(this.tableLogic.table.getCardStack()
 			.getCards());
 
-		while (this.tableLogic.player.getFinishedTurn() != true) {
+		while (!this.tableLogic.player.isTurnFinished()) {
 		    // player actions are handled via events
 		}
 
-		if (this.tableLogic.player.getTookAction() == false) {
+		if (!this.tableLogic.player.getTookAction()) {
 		    this.logWriter.write("%s skipped!",
 			    this.currentPlayer.toString());
 		}
@@ -91,10 +90,10 @@ public class DefaultTable extends AbstractTable {
 
 	this.logWriter.write("Player game-rating:");
 	for (IPlayer player : this.tableLogic.player.getList()) {
-	    byte[] playerCards = player.getCards();
-	    String playerName = (this.tableLogic.game.round.isClosedBy(player)) ? "* "
-		    + player.toString()
-		    : player.toString();
+	    final byte[] playerCards = player.getCards();
+	    final String playerName = (this.tableLogic.game.round
+		    .isClosedBy(player)) ? "* " + player.toString() : player
+		    .toString();
 	    if (playerCards == null) {
 		this.logWriter.write(" %s gave us no card information",
 			playerName);
@@ -119,7 +118,7 @@ public class DefaultTable extends AbstractTable {
     }
 
     @Override
-    public void handleTableLogicEvent(Action action, Object data) {
+    public void handleTableLogicEvent(final Action action, final Object data) {
 	switch (action) {
 	case DROP_CARD:
 	    this.logWriter.player("dropped %s",

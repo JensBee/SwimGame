@@ -83,7 +83,7 @@ public class CardStack {
      */
     public CardStack(final boolean filled) {
 	this.buildStringArray();
-	if (filled == true) {
+	if (filled) {
 	    // The card stack will be initially full
 	    this.cardStack = CardStack.getNewStack(true);
 	    this.empty = false;
@@ -115,7 +115,7 @@ public class CardStack {
 	 *            The card to check
 	 * @return The card color: 0=♦; 1=♥; 2=♠; 3=♣
 	 */
-	public int getColor(int card) {
+	public int getColor(final int card) {
 	    CardStack.checkCard(card);
 	    return card / CardStack.CARDS_MAX_CARD;
 	}
@@ -131,14 +131,14 @@ public class CardStack {
 	}
 
 	/** Get the type for a card */
-	public int getType(int card) {
+	public int getType(final int card) {
 	    CardStack.checkCard(card);
 	    return (card < CardStack.CARDS_MAX_CARD) ? card
 		    : (card % CardStack.CARDS_MAX_CARD);
 	}
 
 	/** Gets the stored value for a card */
-	public byte getValue(int card) {
+	public byte getValue(final int card) {
 	    CardStack.checkCard(card);
 	    return CardStack.this.cardStack[card];
 	}
@@ -149,7 +149,7 @@ public class CardStack {
 	 * CardStack#FLAG_HAS_CARD). If you want to add a card use addCard() or
 	 * addCards() instead.
 	 */
-	public void setValue(int card, byte value) {
+	public void setValue(final int card, final byte value) {
 	    CardStack.checkCard(card);
 	    CardStack.this.cardStack[card] = value;
 	}
@@ -173,8 +173,9 @@ public class CardStack {
 	    // try to find a random card that's still on the stack
 	    // TODO: make this aware of available cards to be more intelligent
 	    while (true) {
-		int card = CardStack.random.nextInt(CardStack.CARDS_MAX_CARD
-			* CardStack.CARDS_MAX_COLOR);
+		final int card = CardStack.random
+			.nextInt(CardStack.CARDS_MAX_CARD
+				* CardStack.CARDS_MAX_COLOR);
 		if (CardStack.this.cardStack[card] == CardStack.FLAG_HAS_CARD) {
 		    // card is there .. take it
 		    CardStack.this.cardStack[card] = CardStack.FLAG_NO_CARD;
@@ -191,12 +192,15 @@ public class CardStack {
 	 * @return True if it got removed
 	 */
 	public boolean remove(final int card) {
+	    boolean success;
 	    if (CardStack.this.cardStack[card] == CardStack.FLAG_NO_CARD) {
-		return false;
+		success = false;
+	    } else {
+		CardStack.this.cardStack[card] = CardStack.FLAG_NO_CARD;
+		CardStack.this.cardsCount--;
+		success = true;
 	    }
-	    CardStack.this.cardStack[card] = CardStack.FLAG_NO_CARD;
-	    CardStack.this.cardsCount--;
-	    return true;
+	    return success;
 	}
 
 	/**
@@ -207,13 +211,16 @@ public class CardStack {
 	 * @return True if it was added
 	 */
 	public boolean add(int card) {
+	    boolean success;
 	    if (CardStack.this.cardStack[card] == CardStack.FLAG_HAS_CARD) {
-		return false;
+		success = false;
+	    } else {
+		CardStack.this.cardStack[card] = CardStack.FLAG_HAS_CARD;
+		CardStack.this.empty = false;
+		CardStack.this.cardsCount++;
+		success = true;
 	    }
-	    CardStack.this.cardStack[card] = CardStack.FLAG_HAS_CARD;
-	    CardStack.this.empty = false;
-	    CardStack.this.cardsCount++;
-	    return true;
+	    return success;
 	}
 
 	/** Add a bunch of cards */
@@ -226,6 +233,7 @@ public class CardStack {
 
 	/** Get the value of a card as calculated at the end of the game */
 	public byte getWorth(int card) {
+	    byte worth;
 	    CardStack.checkCard(card);
 	    int positionValue = 0;
 	    if (card < CardStack.CARDS_MAX_CARD) {
@@ -233,10 +241,11 @@ public class CardStack {
 	    }
 	    positionValue = (card - ((card / CardStack.CARDS_MAX_CARD) * CardStack.CARDS_MAX_CARD));
 	    if (positionValue > 2) {
-		return (byte) (positionValue < 7 ? 10 : 11);
+		worth = (byte) (positionValue < 7 ? 10 : 11);
 	    } else {
-		return (byte) (positionValue + 7);
+		worth = (byte) (positionValue + 7);
 	    }
+	    return worth;
 	}
     }
 
@@ -248,11 +257,11 @@ public class CardStack {
 	if (this.empty) {
 	    return "";
 	}
-	String cards = "";
+	StringBuffer cards = new StringBuffer();
 	for (byte card : this.getCards()) {
-	    cards += this.card.toString(card);
+	    cards.append(this.card.toString(card));
 	}
-	return cards;
+	return cards.toString();
     }
 
     /**
@@ -319,7 +328,7 @@ public class CardStack {
 	CardStack.checkCardType(cardType);
 	byte[] typeCards = new byte[CardStack.CARDS_MAX_COLOR];
 
-	int offset = cardType;
+	final int offset = cardType;
 	for (int i = 0; i < CardStack.CARDS_MAX_COLOR; i++) {
 	    typeCards[i] = (byte) (offset + (i * CardStack.CARDS_MAX_CARD));
 	}
@@ -334,7 +343,7 @@ public class CardStack {
 	CardStack.checkCardColor(cardColor);
 	byte[] colorCards = new byte[CardStack.CARDS_MAX_CARD];
 
-	int offset = cardColor * CardStack.CARDS_MAX_CARD;
+	final int offset = cardColor * CardStack.CARDS_MAX_CARD;
 	for (int i = 0; i < CardStack.CARDS_MAX_CARD; i++) {
 	    colorCards[i] = (byte) (offset + i);
 	}
@@ -454,9 +463,9 @@ public class CardStack {
 
     /** Dump the current stack as nicely formatted table */
     public StringBuffer dump() {
-	StringBuffer dumpStr = new StringBuffer();
+	final StringBuffer dumpStr = new StringBuffer();
 
-	String separator = "\n-+----+----+----+----+----+----+----+----+";
+	final String separator = "\n-+----+----+----+----+----+----+----+----+";
 	String content = "\n%s|%+4d|%+4d|%+4d|%+4d|%+4d|%+4d|%+4d|%+4d|";
 
 	dumpStr.append(String.format(

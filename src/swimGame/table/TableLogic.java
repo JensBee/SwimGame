@@ -69,21 +69,21 @@ public class TableLogic {
 	// A player has picked the initial card stack
     }
 
-    public TableLogic(ITable tableController) {
+    public TableLogic(final ITable tableController) {
 	this.tableController = tableController;
 	this.table = new TableLogic.Table();
 	this.player = new TableLogic.Player();
 	this.game = new TableLogic.Game();
     }
 
-    public TableLogic(ITable tableController, int gamesToPlay) {
+    public TableLogic(final ITable tableController, final int gamesToPlay) {
 	this.tableController = tableController;
 	this.player = new TableLogic.Player();
 	this.game = new TableLogic.Game(gamesToPlay);
 	this.table = new TableLogic.Table();
     }
 
-    public TableLogic(ITable tableController, int maxRoundsPerGame,
+    public TableLogic(final ITable tableController, final int maxRoundsPerGame,
 	    int gamesToPlay) {
 	this.tableController = tableController;
 	this.player = new TableLogic.Player();
@@ -115,7 +115,7 @@ public class TableLogic {
 		if (p1 < p2) {
 		    return -1;
 		}
-		if (p1 == p2) {
+		if (p1.equals(p2)) {
 		    return 0;
 		}
 		return 1;
@@ -123,7 +123,7 @@ public class TableLogic {
 	}
 
 	// allows comparison of players by their overall points
-	PlayerComparator playerComparator = new PlayerComparator();
+	private final PlayerComparator playerComparator = new PlayerComparator();
 
 	/** Has player already taken an action while in turn? */
 	public boolean getTookAction() {
@@ -136,7 +136,7 @@ public class TableLogic {
 	}
 
 	/** Get the current players turn state */
-	public boolean getFinishedTurn() {
+	public boolean isTurnFinished() {
 	    return this.finishedTurn;
 	}
 
@@ -165,7 +165,7 @@ public class TableLogic {
 
 	/** Add points to the all-games counter */
 	public void addPoints(IPlayer player, Double pointsToAdd) {
-	    Double currentPoints = this.getPoints(player);
+	    final Double currentPoints = this.getPoints(player);
 	    this.list.put(player, currentPoints + pointsToAdd);
 	}
 
@@ -176,10 +176,10 @@ public class TableLogic {
 
 	/** Get the list of players ranked by their overall game-points */
 	public Map<IPlayer, Double> getRanked() {
-	    List<IPlayer> keys = new ArrayList<IPlayer>(this.list.size());
+	    final List<IPlayer> keys = new ArrayList<IPlayer>(this.list.size());
 	    keys.addAll(this.list.keySet());
 	    Collections.sort(keys, this.playerComparator);
-	    Map<IPlayer, Double> rankedMap = new HashMap<IPlayer, Double>();
+	    final Map<IPlayer, Double> rankedMap = new HashMap<IPlayer, Double>();
 	    for (IPlayer player : keys) {
 		rankedMap.put(player, this.list.get(player));
 	    }
@@ -228,14 +228,14 @@ public class TableLogic {
 	    // get the IPlayer objects as array for easy index handling
 	    private List<IPlayer> player;
 	    // track, if we have already build the player array
-	    private final boolean initialized = false;
+	    private boolean initialized = false;
 
 	    /**
 	     * @param wrapAround
 	     *            If true, the iterator will restart at the beginning,
 	     *            if hitting the end of the player list
 	     */
-	    private PlayerIterator(boolean wrapAround) {
+	    protected PlayerIterator(boolean wrapAround) {
 		this.wrapAround = wrapAround;
 	    }
 
@@ -246,11 +246,12 @@ public class TableLogic {
 	    private void initialize() {
 		this.player = Collections
 			.unmodifiableList(TableLogic.this.player.getList());
+		this.initialized = true;
 	    }
 
-	    @Override
+	    final @Override
 	    public boolean hasNext() {
-		if (this.initialized == false) {
+		if (!this.initialized) {
 		    this.initialize();
 		}
 
@@ -274,7 +275,7 @@ public class TableLogic {
 
 	    @Override
 	    public IPlayer next() {
-		if (this.initialized == false) {
+		if (!this.initialized) {
 		    this.initialize();
 		}
 
@@ -308,7 +309,7 @@ public class TableLogic {
 
 	    /** Index of the current player in the player list */
 	    private byte getIndex() {
-		if (this.initialized == false) {
+		if (!this.initialized) {
 		    this.initialize();
 		}
 		return (this.pointer == -1) ? 0 : this.pointer;
@@ -642,11 +643,11 @@ public class TableLogic {
 	 * Close player participation opportunity and prepare game start.
 	 */
 	protected void close() {
-	    if (this.closed != true) {
+	    if (!this.closed) {
 		TableLogic.this.player.fireEvent(Event.TABLE_CLOSED, null);
 		this.closed = true;
 
-		if (Debug.debug == true) {
+		if (Debug.debug) {
 		    Debug.println(this.getClass(), String.format(
 			    "Players: %d  Maximum rounds: %d",
 			    TableLogic.this.player.amount(),
@@ -688,7 +689,7 @@ public class TableLogic {
 	    byte[] initialCardSet = new byte[3];
 
 	    for (IPlayer player : TableLogic.this.player.getList()) {
-		if (player == beginningPlayer) {
+		if (player.equals(beginningPlayer)) {
 		    initialCardSet = this.getPlayerCardSet();
 		    player.setCards(initialCardSet);
 		} else {

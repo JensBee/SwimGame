@@ -36,7 +36,7 @@ public class BehaviorTest {
 	    }
 	}
 
-	Debug.debug = true;
+	Debug.debug = false;
 	BasicTable table = new BasicTable();
 	TableLogic tableLogic = table.getLogic();
 

@@ -23,7 +23,7 @@ public abstract class AbstractTable implements ITable {
      * 
      */
     protected class LogWriter {
-	private String getPlayerName(IPlayer player) {
+	private String getPlayerName(final IPlayer player) {
 	    return String.format("<%s> ", player.toString());
 	}
 
@@ -32,16 +32,17 @@ public abstract class AbstractTable implements ITable {
 		    .getCurrentPlayer());
 	}
 
-	protected void player(String format, Object... args) {
+	protected void player(final String format, final Object... args) {
 	    Console.println(AbstractTable.this.className, this.getPlayerName()
 		    + (new Formatter().format(format, args).toString()));
 	}
 
-	protected void player(String message) {
+	protected void player(final String message) {
 	    this.player(message, (Object[]) null);
 	}
 
-	protected void player(IPlayer player, String format, Object... args) {
+	protected void player(IPlayer player, String format,
+		final Object... args) {
 	    Console.println(
 		    AbstractTable.this.className,
 		    this.getPlayerName(player)
