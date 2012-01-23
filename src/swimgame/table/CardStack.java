@@ -2,8 +2,8 @@ package swimgame.table;
 
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.Random;
 
+import swimgame.Util;
 import swimgame.table.logic.TableLogic;
 
 /**
@@ -25,7 +25,7 @@ import swimgame.table.logic.TableLogic;
  */
 public class CardStack {
     /** Random number generator for all card stacks. */
-    private static Random random = null;
+    // private static Random random = null;
     /** Denotes this stacks empty state. */
     private boolean empty = true;
 
@@ -150,7 +150,7 @@ public class CardStack {
     public final void removeCard(final int card) throws TableException {
 	if (this.cardStack[card] == CardStack.FLAG_NO_CARD) {
 	    throw new TableException(TableException.Exception.DROP_NOT_OWNED,
-		    this.cardToString(card));
+		    CardStack.cardToString(card));
 	}
 	this.cardStack[card] = CardStack.FLAG_NO_CARD;
 	this.cardsCount--;
@@ -182,7 +182,7 @@ public class CardStack {
 	}
 	StringBuffer cards = new StringBuffer();
 	for (byte card : this.getCards()) {
-	    cards.append(this.cardToString(card));
+	    cards.append(CardStack.cardToString(card));
 	}
 	return cards.toString();
     }
@@ -194,9 +194,25 @@ public class CardStack {
      *            The card by index
      * @return A string that looks like [♥A] for heart-ace
      */
-    public final String cardToString(final int card) {
+    public static final String cardToString(final int card) {
 	CardStack.validateCardIndex(card);
 	return "[" + CardStack.cardStackStr[card] + "]";
+    }
+
+    /**
+     * Get a string representation of the given cards.
+     * 
+     * @param cards
+     *            Byte array with cards to print
+     * @return String representation of the given cards
+     */
+    public static final String cardsToString(final byte[] cards) {
+	StringBuffer cardString = new StringBuffer();
+	for (byte card : cards) {
+	    CardStack.validateCardIndex(card);
+	    cardString.append("[" + CardStack.cardStackStr[card] + "]");
+	}
+	return cardString.toString();
     }
 
     /**
@@ -356,7 +372,7 @@ public class CardStack {
      *            The card to check
      * @return The card color: 0=♦; 1=♥; 2=♠; 3=♣
      */
-    public final int getCardColor(final int card) {
+    public static final int getCardColor(final int card) {
 	CardStack.validateCardIndex(card);
 	return card / CardStack.CARDS_MAX_CARD;
     }
@@ -426,7 +442,7 @@ public class CardStack {
 	    if (this.pointer < CardStack.CARDS_MAX_CARD) {
 		return 0;
 	    }
-	    return CardStack.this.getCardColor(this.getCard());
+	    return CardStack.getCardColor(this.getCard());
 	}
     }
 
@@ -648,15 +664,11 @@ public class CardStack {
 		    "Unable to get a card. Stack is empty!");
 	}
 
-	if (CardStack.random == null) {
-	    CardStack.random = new Random();
-	}
-
 	// try to find a random card that's still on the stack
 	// TODO: make this aware of available cards to be more intelligent
 	while (true) {
 	    // TODO: changed random here :)
-	    final int card = (int) (Math.random() * (CardStack.STACK_SIZE + 1));
+	    final int card = Util.randomInt(CardStack.STACK_SIZE - 1);
 	    if (CardStack.this.cardStack[card] == CardStack.FLAG_HAS_CARD) {
 		// card is there .. take it
 		this.cardStack[card] = CardStack.FLAG_NO_CARD;

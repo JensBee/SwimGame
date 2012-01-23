@@ -55,7 +55,7 @@ public class BehaviorTest {
 	double ratingPoints = 0;
 	double gamePoints = 0;
 	for (int i = 0; i < NUMBER_OF_TURNS; i++) {
-	    System.out.println("Turn " + i);
+	    System.out.println("=== Turn " + i);
 	    // start a game
 	    ratingPoints = 0;
 	    gamePoints = 0;
@@ -86,8 +86,9 @@ public class BehaviorTest {
 		}
 		gamePoints = new CardStack(player.getCards()).getValue();
 		// store test-player ratings [place, points]
-		System.out.println("R: " + rank + " r:" + ratingPoints + " g:"
-			+ gamePoints);
+		System.out.println("C:"
+			+ CardStack.cardsToString(player.getCards()) + " R: "
+			+ rank + " r:" + ratingPoints + " g:" + gamePoints);
 		gameRatings.add(new Double[] { ratingPoints, gamePoints });
 
 		// we're finished

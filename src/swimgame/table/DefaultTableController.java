@@ -129,9 +129,8 @@ public class DefaultTableController extends AbstractTableController {
 		this.logWriter.write(" %s gave us no card information",
 			playerName);
 	    } else {
-		CardStack playerCardStack = new CardStack(playerCards);
 		this.logWriter.write(" %s's cards: %s value: %.0f", playerName,
-			playerCardStack.toString(),
+			CardStack.cardsToString(playerCards),
 			CardStack.calculateValue(playerCards));
 	    }
 	}
@@ -158,18 +157,18 @@ public class DefaultTableController extends AbstractTableController {
 	switch (action) {
 	case DROP_CARD:
 	    this.logWriter.player("dropped %s",
-		    this.cardStack.cardToString((byte) data));
+		    CardStack.cardToString((byte) data));
 	    break;
 	case DROP_CARDSTACK_INITIAL:
 	    this.logWriter.player("drops the initial card set: %s",
-		    new CardStack((byte[]) data).toString());
+		    CardStack.cardsToString((byte[]) data));
 	    break;
 	case END_CALL:
 	    this.logWriter.player("is closing. Last call!");
 	    break;
 	case PICK_CARD:
 	    this.logWriter.player("picked card %s",
-		    this.cardStack.cardToString((byte) data));
+		    CardStack.cardToString((byte) data));
 	    break;
 	case INITIAL_CARDSTACK_PICKED:
 	    this.logWriter.player("picked the initial card set");

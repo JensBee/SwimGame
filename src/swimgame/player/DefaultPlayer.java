@@ -223,17 +223,30 @@ public class DefaultPlayer extends AbstractPlayer {
 	    return this.ratings[RATING_TYPE];
 	}
 
-	/** Rate a card based on it's card value. */
+	/**
+	 * Rate a card based on it's card value.
+	 * 
+	 * @param card
+	 *            Card to rate
+	 * @return Rating
+	 */
 	protected double byValue(final int card) {
 	    this.ratings[RATING_VALUE] = Rating.normalize(
 		    CardStack.CARDS_MAX_CARD - 1, this.getCardRating(card));
 	    return this.ratings[RATING_VALUE];
 	}
 
+	/**
+	 * Rate a card by it's probability to be in the game. This means, if we
+	 * have seen a card dropped on the table there's a possibility to get
+	 * this single card to complete our stack.
+	 * 
+	 * @param card
+	 *            Card to check
+	 * @return Rating
+	 */
 	protected double byAvailability(final int card) {
 	    int maxValue = 0;
-	    System.out.println("[C]csTable:"
-		    + DefaultPlayer.this.cardStackTable.toString());
 	    for (byte stackCard : DefaultPlayer.this.cardStackTable.getCards()) {
 		maxValue = DefaultPlayer.this.cardStackTable
 			.getCardValue(stackCard) > maxValue ? DefaultPlayer.this.cardStackTable

@@ -53,9 +53,9 @@ class BasicTable extends DefaultTableController {
 	    if (playerCards == null) {
 		// TODO: error out!
 	    } else {
-		CardStack playerCardStack = new CardStack(playerCards);
 		System.out.printf(" %s's cards: %s value: %.0f\n", player,
-			playerCardStack.toString(), playerCardStack.getValue());
+			CardStack.cardsToString(playerCards),
+			CardStack.calculateValue(playerCards));
 	    }
 	}
     }
