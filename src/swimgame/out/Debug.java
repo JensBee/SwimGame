@@ -14,7 +14,7 @@ public class Debug {
      * General String output function, without debug as prefix.
      * 
      * @param message
-     *            The message to print
+     *            Message to print
      */
     public static void print(final String message) {
 	if (Debug.debug) {
@@ -26,11 +26,11 @@ public class Debug {
      * Print a message with a player-name and debug as prefix.
      * 
      * @param player
-     *            The player
+     *            {@link IPlayer} whose name will be used as prefix
      * @param prefix
      *            If true the debug prefix will be printed
      * @param message
-     *            The message to print
+     *            Message to print
      */
     public static void print(final IPlayer player, final boolean prefix,
 	    final String message) {
@@ -41,9 +41,9 @@ public class Debug {
      * Print a message with a debug and player-name as prefix.
      * 
      * @param player
-     *            The Player
+     *            {@link IPlayer} whose name will be used as prefix
      * @param message
-     *            The message to print
+     *            Message to print
      */
     public static void print(final DefaultPlayer player, final String message) {
 	Debug.print(true, "<" + player + "> " + message);
@@ -55,7 +55,7 @@ public class Debug {
      * @param prefix
      *            If true the debug prefix will be printed
      * @param message
-     *            The message to print
+     *            Message to print
      */
     public static void print(final boolean prefix, final String message) {
 	if (prefix) {
@@ -69,7 +69,7 @@ public class Debug {
      * Print a message with linefeed and debug prefix.
      * 
      * @param message
-     *            The message to print
+     *            Message to print
      */
     public static void println(final String message) {
 	Debug.print(message + "\n");
@@ -79,9 +79,9 @@ public class Debug {
      * Print a message with the classname and debug prefix and a linefeed.
      * 
      * @param callerClass
-     *            The class to print as prefix
+     *            Class to print as prefix
      * @param message
-     *            The message to print
+     *            Message to print
      */
     public static void println(final Class<?> callerClass, final String message) {
 	Debug.println(Debug.PREFIX + "[" + callerClass + "] " + message);
@@ -91,9 +91,9 @@ public class Debug {
      * Print a message with the debug and player prefix..
      * 
      * @param player
-     *            The Player
+     *            {@link IPlayer} whose name will be used as prefix
      * @param message
-     *            The message to print
+     *            Message to print
      */
     public static void print(final IPlayer player, final String message) {
 	Debug.print(Debug.PREFIX + "<" + player + "> " + message);
@@ -103,9 +103,9 @@ public class Debug {
      * Print a message with the debug and player prefix and a linefeed.
      * 
      * @param player
-     *            The player
+     *            {@link IPlayer} whose name will be used as prefix
      * @param message
-     *            The message to print
+     *            Message to print
      */
     public static void println(final IPlayer player, final String message) {
 	Debug.print(player, message + "\n");
@@ -122,9 +122,9 @@ public class Debug {
      * Print a formatted string with debug prefix.
      * 
      * @param message
-     *            The message as format string
+     *            Message as format string
      * @param obj
-     *            The replace objects
+     *            Replace objects
      */
     public static void printf(final String message, final Object... obj) {
 	Debug.printf(true, message, obj);
@@ -134,15 +134,30 @@ public class Debug {
      * Print a formatted string with debug and class name prefix .
      * 
      * @param callerClass
-     *            The class to print as prefix
+     *            Class to print as prefix
      * @param message
-     *            The messaget print as format string
+     *            Message to print as format string
      * @param obj
-     *            The replacement objects
+     *            Replacement objects
      */
     public static void printf(final Class<?> callerClass, final String message,
 	    final Object... obj) {
 	Debug.printf(true, "[" + callerClass + "] " + message, obj);
+    }
+
+    /**
+     * Print a formatted string with debug and the player name name prefix .
+     * 
+     * @param player
+     *            Class to print as prefix
+     * @param message
+     *            Message to print as format string
+     * @param obj
+     *            Replacement objects
+     */
+    public static void printf(final IPlayer player, final String message,
+	    final Object... obj) {
+	Debug.printf(true, "<" + player + "> " + message, obj);
     }
 
     /**
@@ -151,9 +166,9 @@ public class Debug {
      * @param prefix
      *            If true the debug prefix will be printed
      * @param message
-     *            The message as format string
+     *            Message as format string
      * @param obj
-     *            The replace objects
+     *            Replace objects
      */
     public static void printf(final boolean prefix, final String message,
 	    final Object... obj) {

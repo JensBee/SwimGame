@@ -15,7 +15,7 @@ public class HumanPlayer extends AbstractPlayer {
     private static final String NAME = "Human";
     /** {@link TableLogic} of the game table. */
     private final TableLogic tableLogic;
-    /** Card stac owned by this player instance. */
+    /** Card stack owned by this player instance. */
     private CardStack cardStack;
     /** Game close called? */
     private boolean gameIsClosed = false;
@@ -179,10 +179,5 @@ public class HumanPlayer extends AbstractPlayer {
     @Override
     final void setGameClosed() {
 	this.gameIsClosed = true;
-    }
-
-    @Override
-    final void setGameFinished() {
-	throw new IllegalStateException("Operation not supported.");
     }
 }

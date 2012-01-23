@@ -21,12 +21,12 @@ import swimgame.table.logic.TableLogic;
  */
 abstract class AbstractPlayer implements IPlayer {
     /** List of predefined player names. */
-    private static List<String> NAME_LIST = new ArrayList<String>(
+    private static List<String> playerNames = new ArrayList<String>(
 	    Arrays.asList("Bob", "Alice", "Carol", "Dave", "Ted", "Eve",
 		    "Oscar", "Peggy", "Victor"));
 
     /**
-     * Log a message to the console
+     * Log a message to the console.
      * 
      * @param message
      *            The message to log
@@ -41,15 +41,14 @@ abstract class AbstractPlayer implements IPlayer {
      * @return Player name chosen from a predefined set
      */
     String getRandomName() {
-	return AbstractPlayer.NAME_LIST
-		.remove(Util.randomInt(NAME_LIST.size() - 1));
+	return AbstractPlayer.playerNames.remove(Util.randomInt(playerNames
+		.size() - 1));
     }
 
     @Override
     public void setCards(final byte[] cards) {
 	this.setCardStack(new CardStack(cards));
-	Debug.print(this, "Recieved cards: " + this.getCardStack().toString()
-		+ "\n");
+	Debug.printf(this, "Recieved cards: %s\n", this.getCardStack());
     }
 
     /**
@@ -90,17 +89,11 @@ abstract class AbstractPlayer implements IPlayer {
     /** Set the current game as being closed.. */
     abstract void setGameClosed();
 
-    /** Set the current game as being finished. */
-    abstract void setGameFinished();
-
     @Override
     public void handleTableEvent(final TableLogic.Event event, final Object data) {
 	switch (event) {
 	case GAME_CLOSED:
 	    this.setGameClosed();
-	    break;
-	case GAME_FINISHED:
-	    this.setGameFinished();
 	    break;
 	default:
 	    break;

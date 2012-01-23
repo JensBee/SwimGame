@@ -35,8 +35,6 @@ public class DefaultPlayer extends AbstractPlayer {
     private final TableLogic tableLogic;
     /** The name of this {@link IPlayer} instance. */
     private final String name;
-    /** Game over? */
-    private boolean gameIsFinished = false;
     /** Game close called? */
     private boolean gameIsClosed = false;
 
@@ -47,7 +45,9 @@ public class DefaultPlayer extends AbstractPlayer {
     private static final byte B_RISKYNESS = 3;
 
     // nested classes
+    /** Nested class for rating cards. */
     private CardRating cardRating = null;
+    /** Nested class for rating a card stack. */
     private final StackRating stackRating = new StackRating();
 
     /**
@@ -858,9 +858,6 @@ public class DefaultPlayer extends AbstractPlayer {
 	case GAME_START:
 	    this.initialize();
 	    break;
-	case GAME_FINISHED:
-	    this.gameIsFinished = true;
-	    break;
 	case CARD_DROPPED:
 	    this.cardRating.cardSeen((byte) data);
 	    break;
@@ -882,10 +879,5 @@ public class DefaultPlayer extends AbstractPlayer {
     @Override
     void setGameClosed() {
 	this.gameIsClosed = true;
-    }
-
-    @Override
-    void setGameFinished() {
-	this.gameIsFinished = true;
     }
 }
