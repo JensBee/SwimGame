@@ -4,7 +4,7 @@ import swimgame.out.Debug;
 import swimgame.player.DefaultPlayer;
 import swimgame.player.IPlayer;
 import swimgame.table.CardStack;
-import swimgame.table.TableLogic;
+import swimgame.table.logic.TableLogic;
 
 public class PlayerCardRating {
 
@@ -18,7 +18,7 @@ public class PlayerCardRating {
 	IPlayer player = new DefaultPlayer(new TableLogic(new FakeTable()));
 	CardStack cardStack = new CardStack();
 
-	cardStack.card.add(new byte[] { 5, 13, 29 });
+	cardStack.addCard(new byte[] { 5, 13, 29 });
 	System.out.println("Cards: " + cardStack.toString());
 	System.out.println("Cards value: " + cardStack.getValue());
 	player.setCards(cardStack.getCards());

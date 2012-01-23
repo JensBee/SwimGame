@@ -3,113 +3,106 @@ package swimgame.player;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 
+import swimgame.Util;
 import swimgame.out.Console;
 import swimgame.out.Debug;
 import swimgame.table.CardStack;
-import swimgame.table.TableLogic;
+import swimgame.table.logic.TableLogic;
 
 /**
  * A player playing the game. This abstract class handles the basic player
  * interaction with the table. The real game logic must be implemented by the
  * driving classes.
  * 
- * @see swimgame.table.DefaultTable
- * @author Jens Bertram <code@jens-bertram.net>
+ * @see swimgame.table.DefaultTableController
+ * @author <a href="mailto:code@jens-bertram.net">Jens Bertram</a>
  * 
  */
 abstract class AbstractPlayer implements IPlayer {
-    /** The name of this player */
-    protected String name;
-    /** Holds a list of predefined player names */
-    private static List<String> nameList;
-    /** Reference to the table we're playing on */
-    protected TableLogic tableLogic;
-    // one random generator for all players
-    private static Random random;
-    /** Cards owned by this player */
-    protected CardStack cardStack = null;
-    // game over?
-    protected boolean gameIsFinished = false;
-    // game close called?
-    protected boolean gameIsClosed = false;
+    /** List of predefined player names. */
+    private static List<String> NAME_LIST = new ArrayList<String>(
+	    Arrays.asList("Bob", "Alice", "Carol", "Dave", "Ted", "Eve",
+		    "Oscar", "Peggy", "Victor"));
 
     /**
      * Log a message to the console
      * 
      * @param message
+     *            The message to log
      */
-    protected void log(String message) {
+    void log(final String message) {
 	Console.println(this, message);
     }
 
     /**
-     * Initialize the predefined player names
-     */
-    private void initNames() {
-	if (AbstractPlayer.random == null) {
-	    AbstractPlayer.random = new Random();
-	}
-	if (AbstractPlayer.nameList == null) {
-	    // we have nine players at max
-	    AbstractPlayer.nameList = new ArrayList<String>(Arrays.asList(
-		    "Bob", "Alice", "Carol", "Dave", "Ted", "Eve", "Oscar",
-		    "Peggy", "Victor"));
-	}
-    }
-
-    /**
-     * Empty constructor
-     */
-    public AbstractPlayer(TableLogic tableLogic) {
-	this.tableLogic = tableLogic;
-	this.initNames();
-	// get a random name
-	this.name = AbstractPlayer.nameList.remove(AbstractPlayer.random
-		.nextInt(AbstractPlayer.nameList.size()));
-    }
-
-    /**
-     * Constructor
+     * Get a random player name.
      * 
-     * @param name
-     *            The name of this player
+     * @return Player name chosen from a predefined set
      */
-    public AbstractPlayer(TableLogic tableLogic, final String name) {
-	this.tableLogic = tableLogic;
-	this.name = name;
+    String getRandomName() {
+	return AbstractPlayer.NAME_LIST
+		.remove(Util.randomInt(NAME_LIST.size() - 1));
     }
 
     @Override
     public void setCards(final byte[] cards) {
-	this.cardStack = new CardStack(cards);
-	Debug.print(this, "Recieved cards: " + this.cardStack.toString() + "\n");
+	this.setCardStack(new CardStack(cards));
+	Debug.print(this, "Recieved cards: " + this.getCardStack().toString()
+		+ "\n");
     }
 
     /**
-     * Get the name of this player
+     * Get the {@link CardStack} owned by this player instance.
+     * 
+     * @return {@link CardStack} owned by this player instance
+     */
+    abstract CardStack getCardStack();
+
+    /**
+     * Set the {@link CardStack} owned by this player instance.
+     * 
+     * @param newCardStack
+     *            New {@link CardStack} to set for this player
+     */
+    abstract void setCardStack(final CardStack newCardStack);
+
+    /**
+     * Return the name of this player.
      * 
      * @return The name of this player
      */
     @Override
     public String toString() {
-	return this.name;
+	return this.getName();
     }
 
     @Override
     public byte[] getCards() {
-	return this.cardStack.getCards();
+	if (this.getCardStack() != null) {
+	    return this.getCardStack().getCards();
+	} else {
+	    // TODO: sport an error notice
+	    return new byte[] {};
+	}
     }
 
+    /** Set the current game as being closed.. */
+    abstract void setGameClosed();
+
+    /** Set the current game as being finished. */
+    abstract void setGameFinished();
+
     @Override
-    public void handleTableEvent(TableLogic.Event event, Object data) {
+    public void handleTableEvent(final TableLogic.Event event, final Object data) {
 	switch (event) {
 	case GAME_CLOSED:
-	    this.gameIsClosed = true;
+	    this.setGameClosed();
 	    break;
 	case GAME_FINISHED:
-	    this.gameIsFinished = true;
+	    this.setGameFinished();
+	    break;
+	default:
 	    break;
 	}
     }

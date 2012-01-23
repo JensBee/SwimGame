@@ -3,31 +3,53 @@ package swimgame;
 import swimgame.out.Console;
 import swimgame.out.Debug;
 import swimgame.player.HumanPlayer;
-import swimgame.table.DefaultTable;
-import swimgame.table.TableLogic;
+import swimgame.table.DefaultTableController;
+import swimgame.table.logic.TableLogic;
 
 public class SwimGame {
+    /** Version of this implementation. */
     private static final double VERSION = 0.1;
+    /** Is a human player present? */
     private static boolean humanPlayer = false;
 
-    /** General program termination on errors */
+    /**
+     * General program termination on errors.
+     * 
+     * @param e
+     *            Exception to throw
+     */
     private static void exitWithError(final Exception e) {
 	e.printStackTrace();
 	System.exit(1);
     }
 
-    /** General program termination on errors */
+    /**
+     * General program termination on errors.
+     * 
+     * @param message
+     *            Message to display upon termination
+     */
     private static void exitWithError(final String message) {
 	System.err.println(message);
 	System.exit(1);
     }
 
+    /**
+     * Format a string for nice help output.
+     * 
+     * @param option
+     *            Program option
+     * @param description
+     *            Help string
+     * @return Formatted help string
+     */
     private static String formatHelpString(final String option,
 	    final String description) {
 	final String format = "%-15s   %-60s";
 	return String.format(format, option, description);
     }
 
+    /** Print the program help. */
     private static void printHelp() {
 	Console.println("Your help to swim right:");
 	Console.println(SwimGame.formatHelpString("--debug",
@@ -47,12 +69,14 @@ public class SwimGame {
     }
 
     /**
-     * Main
+     * 
+     * @param args
+     *            Commandline arguments
      */
     public static void main(final String[] args) {
 	int numberOfPLayers = 3;
 	// game playing table
-	DefaultTable table;
+	DefaultTableController table;
 	// default rounds to play
 	int numberOfGamesToPlay = 1;
 	int maxRoundsToPlay = 32;
@@ -101,7 +125,9 @@ public class SwimGame {
 		humanPlayer = true;
 		break;
 	    case "--paused":
-		DefaultTable.pauseAfterRound = true;
+		DefaultTableController.setPauseAfterRound(true);
+		break;
+	    default:
 		break;
 	    }
 	}
@@ -117,14 +143,13 @@ public class SwimGame {
 	Console.println(String.format(
 		"INFO: Game will be played with %d players", gamePlayer));
 	// TODO: get max rounds
-	// Console.println(String
-	// .format("INFO: A maximum of %d rounds will be played",
-	// Table.MAX_ROUNDS));
+	Console.println(String.format(
+		"INFO: A maximum of %d rounds will be played", maxRoundsToPlay));
 	Console.nl();
 
 	// table = new Table(numberOfRounds);
 	// TODO: set max rounds
-	table = new DefaultTable();
+	table = new DefaultTableController();
 	table.setMaxRoundsToPlay(maxRoundsToPlay);
 	table.setNumberOfGamesToPlay(numberOfGamesToPlay);
 

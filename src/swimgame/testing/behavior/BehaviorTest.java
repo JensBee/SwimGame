@@ -1,16 +1,22 @@
 package swimgame.testing.behavior;
 
+import java.util.ArrayList;
+
+import swimgame.out.Console;
 import swimgame.out.Debug;
-import swimgame.player.DefaultPlayer;
 import swimgame.player.IPlayer;
-import swimgame.table.DefaultTable;
-import swimgame.table.TableLogic;
+import swimgame.table.CardStack;
+import swimgame.table.DefaultTableController;
 
 public class BehaviorTest {
-    // store the number of won games (mutated player first)
-    private final int[] wonGames = new int[4];
-    // store the points (mutated player first)
-    private final double[] points = new double[4];
+    /** How many genes should we create? */
+    private static final int NUMBER_OF_GENES = 10;
+    /** How many rounds to play per game in maximum? */
+    private static final int NUMBER_OF_ROUNDS = 40;
+    /** How many games to play? */
+    private static final int NUMBER_OF_GAMES = 10;
+    /** How many turns to play? A turn is anumber of games that will be played. */
+    private static final int NUMBER_OF_TURNS = 10;
 
     /**
      * Test player with different behavior values
@@ -18,34 +24,77 @@ public class BehaviorTest {
      * @throws Exception
      */
     public static void main(String[] args) throws Exception {
-	// not nice, but sufficient here
-	class BasicTable extends DefaultTable {
-	    BasicTable() {
-		super();
-	    }
+	Debug.debug = false;
+	// stop the talky output
+	Console.blocked = true;
+	Console.ask = false;
 
-	    protected void getFinalRatings() {
-		byte rank = 1;
-		for (IPlayer player : this.tableLogic.player.getRanked()
-			.keySet()) {
-		    System.out.println(String.format("%d. %s with %.0f", rank,
-			    player.toString(),
-			    this.tableLogic.player.getPoints(player)));
-		    rank++;
+	final BasicTable table = new BasicTable();
+	final GenePool genePool = new GenePool(NUMBER_OF_GENES);
+	final ArrayList<Double[]> gameRatings = new ArrayList<Double[]>(
+		NUMBER_OF_TURNS);
+
+	DefaultTableController.setPauseAfterRound(false);
+	MutablePlayer mutablePlayer = new MutablePlayer(table.getLogic(),
+		"Mutable");
+	// init the test-player with a random gene
+	mutablePlayer.setGene(genePool.getRandomGene());
+
+	// add out test-player
+	table.addPlayer(mutablePlayer);
+	// add three opponents
+	table.addPlayer(new MutablePlayer(table.getLogic()));
+	table.addPlayer(new MutablePlayer(table.getLogic()));
+	table.addPlayer(new MutablePlayer(table.getLogic()));
+
+	// set game
+	table.setMaxRoundsToPlay(NUMBER_OF_ROUNDS);
+	table.setNumberOfGamesToPlay(NUMBER_OF_GAMES);
+
+	byte rank = 0;
+	double ratingPoints = 0;
+	double gamePoints = 0;
+	for (int i = 0; i < NUMBER_OF_TURNS; i++) {
+	    System.out.println("Turn " + i);
+	    // start a game
+	    ratingPoints = 0;
+	    gamePoints = 0;
+	    rank = 0;
+	    table.start();
+
+	    // game finished, now rate
+	    for (IPlayer player : table.getLogic().getTable().getPlayer()
+		    .getRanked().keySet()) {
+		rank++;
+		if (!player.equals(mutablePlayer)) {
+		    continue;
 		}
+		// how much points should we earn?
+		switch (rank) {
+		case 1:
+		    ratingPoints = 3;
+		    break;
+		case 2:
+		    ratingPoints = 2;
+		    break;
+		case 3:
+		    ratingPoints = 1;
+		    break;
+		default:
+		    ratingPoints = 0;
+		    break;
+		}
+		gamePoints = new CardStack(player.getCards()).getValue();
+		// store test-player ratings [place, points]
+		System.out.println("R: " + rank + " r:" + ratingPoints + " g:"
+			+ gamePoints);
+		gameRatings.add(new Double[] { ratingPoints, gamePoints });
+
+		// we're finished
+		break;
 	    }
 	}
-
-	Debug.debug = false;
-	BasicTable table = new BasicTable();
-	TableLogic tableLogic = table.getLogic();
-
-	// add our mutable player
-	table.addPlayer(new DefaultPlayer(tableLogic, "MutablePlayer"));
-	// add a number of default behavior opponents
-	table.addPlayers(3);
-
-	table.start();
+	// just to show something
 	table.getFinalRatings();
     }
 }

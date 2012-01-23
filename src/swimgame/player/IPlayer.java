@@ -1,55 +1,70 @@
 package swimgame.player;
 
-import swimgame.table.TableLogic;
+import swimgame.table.CardStack;
+import swimgame.table.logic.TableLogic;
 
 /**
  * Interface for a player to be able to join the game. A Player model can be
  * derived from the AbstractPlayer class.
  * 
- * @author Jens Bertram <code@jens-bertram.net>
+ * @author <a href="mailto:code@jens-bertram.net">Jens Bertram</a>
  * 
  */
 public interface IPlayer {
     /**
      * Cards passed to the player from the table.
+     * 
+     * @param cards
+     *            Array of card indices
+     * @see CardStack
      */
-    public void setCards(final byte[] cards);
+    void setCards(final byte[] cards);
 
     /**
-     * Handle events emitted by the table. See Table class for a reference of
-     * possible signals.
+     * Handle {@link TableLogic.Event} events. See {@link TableLogic.Event} for
+     * a reference of possible signals.
      * 
      * @param event
-     *            An int value indicating the event-type.
+     *            An int value indicating the {@link TableLogic.Event} type.
      * @param data
-     *            Data associated with this event (see swimGame.Table#Event)
-     * @see swimGame.DefaultTable
-     * @see swimGame.DefaultTable#Event
+     *            Data associated with this {@link TableLogic.Event}
+     * @see TableLogic.Event
      */
-    public void handleTableEvent(final TableLogic.Event event, Object data);
+    void handleTableEvent(final TableLogic.Event event, final Object data);
 
     /**
      * The player has to decide if he want to keep the card set he already
-     * recieved, or if he would like to get another one (wich implies dropping
+     * recieved, or if he would like to get another one (witch implies dropping
      * the first). This is only possible, if the player is starting the current
      * round.
      * 
      * @return False, if we want to retrieve a new set of cards
      */
-    public boolean keepCardSet();
+    boolean keepCardSet();
 
     /**
-     * It's this players turn to decite for a move
+     * It's this players turn to decide for a move.
      * 
      * @param tableCards
+     *            Array of card indices
+     * @see CardStack
      */
-    public void doMove(byte[] tableCards);
+    void doMove(final byte[] tableCards);
 
     /**
-     * Get the list of cards owned by this player. This should only return
-     * something, if the table game is finished.
+     * Get the list of cards owned by this player.
      * 
-     * @return
+     * @return Array of card indices
+     * @see CardStack
      */
-    public byte[] getCards();
+    byte[] getCards();
+
+    /**
+     * Get the name of this player.
+     * 
+     * @return The name of this player
+     */
+    String getName();
+
+    // void setCardStack(final CardStack cardStack);
 }

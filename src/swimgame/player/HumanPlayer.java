@@ -7,17 +7,37 @@ import java.io.InputStreamReader;
 import swimgame.out.Console;
 import swimgame.out.Debug;
 import swimgame.table.CardStack;
-import swimgame.table.TableLogic;
+import swimgame.table.logic.TableLogic;
 
+/** A simple human player interface. */
 public class HumanPlayer extends AbstractPlayer {
-    private static final String CARDS_FORMATSTRING = "%5s %9s";
+    /** Name for this player. */
+    private static final String NAME = "Human";
+    /** {@link TableLogic} of the game table. */
+    private final TableLogic tableLogic;
+    /** Card stac owned by this player instance. */
+    private CardStack cardStack;
+    /** Game close called? */
+    private boolean gameIsClosed = false;
 
-    public HumanPlayer(TableLogic tableLogic) {
-	super(tableLogic);
-	this.name = "Human";
+    /**
+     * Default constructor.
+     * 
+     * @param newTableLogic
+     *            {@link TableLogic} of the game table
+     */
+    public HumanPlayer(final TableLogic newTableLogic) {
+	this.tableLogic = newTableLogic;
     }
 
-    private char getKey(String message) {
+    /**
+     * Reads a key from the input stream.
+     * 
+     * @param message
+     *            The message to display before reading
+     * @return The key pressed
+     */
+    private char getKey(final String message) {
 	BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 	Console.println("> " + message);
 	try {
@@ -30,7 +50,7 @@ public class HumanPlayer extends AbstractPlayer {
     }
 
     @Override
-    public boolean keepCardSet() {
+    public final boolean keepCardSet() {
 	Debug.println("-----------Keep?");
 	this.getKey("Keep cards? [Y/n]");
 	return false;
@@ -41,42 +61,32 @@ public class HumanPlayer extends AbstractPlayer {
      * @return Negative, if an error occoured
      */
     private int getDropCard() {
-	Debug.println("##DROP");
 	boolean input = false;
-	int returnCode = -2;
-	while (input == false) {
+	while (!input) {
 	    char key = this
 		    .getKey("Press (1-3) to drop a card, [c] to close, [s] to skip..");
 	    switch (key) {
 	    case 'c':
 		if (this.tableLogic.interact(TableLogic.Action.END_CALL,
 			this.cardStack.getCards())) {
-		    returnCode = -1;
-		    input = true;
+		    return -1;
 		} else {
 		    Console.println("Whoops, looks like you can't drop now.");
 		}
 		break;
 	    case 's':
 		this.tableLogic.interact(TableLogic.Action.MOVE_FINISHED);
-		returnCode = -1;
-		input = true;
-		break;
+		return -1;
 	    case '1':
-		returnCode = 0;
-		input = true;
-		break;
 	    case '2':
-		returnCode = 1;
-		input = true;
-		break;
 	    case '3':
-		returnCode = 2;
-		input = true;
-		break;
+		return Integer.parseInt(String.valueOf(key)) - 1;
+	    default:
+		// just set some illegal value
+		return -2;
 	    }
 	}
-	return returnCode;
+	return -2;
     }
 
     /**
@@ -87,7 +97,7 @@ public class HumanPlayer extends AbstractPlayer {
 	Debug.println("##PICK");
 	boolean input = false;
 	int returnCode = -2;
-	while (input == false) {
+	while (!input) {
 	    char key = this.getKey("Press (1-3) to pick a card");
 	    switch (key) {
 	    case '1':
@@ -102,19 +112,23 @@ public class HumanPlayer extends AbstractPlayer {
 		returnCode = 2;
 		input = true;
 		break;
+	    default:
+		break;
 	    }
 	}
 	return returnCode;
     }
 
     @Override
-    public void doMove(byte[] tableCards) {
-	if (this.gameIsClosed == true) {
+    public final void doMove(final byte[] tableCards) {
+	String cardsFormatString = "%5s %9s";
+
+	if (this.gameIsClosed) {
 	    Console.println("** close called!");
 	}
-	Console.println(String.format(HumanPlayer.CARDS_FORMATSTRING, "Table",
+	Console.println(String.format(cardsFormatString, "Table",
 		new CardStack(tableCards).toString()));
-	Console.println(String.format(CARDS_FORMATSTRING, "Yours",
+	Console.println(String.format(cardsFormatString, "Yours",
 		this.cardStack.toString()));
 	int cardToPick = 0;
 	int cardToDrop = 0;
@@ -132,13 +146,43 @@ public class HumanPlayer extends AbstractPlayer {
 			&& this.tableLogic.interact(
 				TableLogic.Action.PICK_CARD,
 				tableCards[cardToPick])) {
-		    this.cardStack.card
-			    .remove(this.cardStack.getCards()[cardToDrop]);
-		    this.cardStack.card.add(tableCards[cardToPick]);
+		    try {
+			this.cardStack
+				.removeCard(this.cardStack.getCards()[cardToDrop]);
+		    } catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		    }
+		    this.cardStack.addCard(tableCards[cardToPick]);
 		}
 	    }
 	}
 
 	this.tableLogic.interact(TableLogic.Action.MOVE_FINISHED);
+    }
+
+    @Override
+    public final String getName() {
+	return NAME;
+    }
+
+    @Override
+    final CardStack getCardStack() {
+	return this.cardStack;
+    }
+
+    @Override
+    final void setCardStack(final CardStack newCardStack) {
+	this.cardStack = newCardStack;
+    }
+
+    @Override
+    final void setGameClosed() {
+	this.gameIsClosed = true;
+    }
+
+    @Override
+    final void setGameFinished() {
+	throw new IllegalStateException("Operation not supported.");
     }
 }
