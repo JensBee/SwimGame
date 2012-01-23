@@ -3,6 +3,7 @@ package swimgame.table.logic;
 import java.util.Iterator;
 
 import swimgame.player.IPlayer;
+import swimgame.table.CardStack;
 
 /**
  * Rounds of a game being played.
@@ -200,5 +201,13 @@ public class Round implements Iterator<Integer> {
     @Override
     public void remove() {
 	// not implemented
+    }
+
+    /** Save points of this round to the overall player points. */
+    public void savePoints() {
+	for (IPlayer player : this.table.player.asList()) {
+	    this.table.player.addPoints(player,
+		    CardStack.calculateValue(player.getCards()));
+	}
     }
 }

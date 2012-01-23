@@ -29,6 +29,7 @@ class BasicTable extends DefaultTableController {
     /** Create a final rating after a number of games. */
     protected void getFinalRatings() {
 	byte rank = 1;
+	System.out.println("===========FINAL");
 	for (IPlayer player : this.tableLogic.getTable().getPlayer()
 		.getRanked().keySet()) {
 	    System.out.println(String.format("%d. %s with %.0f", rank,

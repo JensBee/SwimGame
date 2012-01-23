@@ -103,6 +103,7 @@ public class DefaultTableController extends AbstractTableController {
 			.write("Sorry players, I'll stop here! You reached the maximum of %d rounds without anyone winning.",
 				game.getRound().getMaxLength());
 	    }
+	    game.getRound().savePoints();
 	    this.generateRating();
 
 	    if (pauseAfterRound && game.hasNext()) {

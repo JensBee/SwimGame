@@ -95,7 +95,7 @@ public class BehaviorTest {
 		    ratingPoints = 0;
 		    break;
 		}
-		gamePoints = new CardStack(player.getCards()).getValue();
+		gamePoints = CardStack.calculateValue(player.getCards());
 
 		// debug out
 		System.out.println(String.format("Rating: %-"

@@ -63,7 +63,7 @@ public class PlayerGene extends PlayerConfiguration {
     public String toString() {
 	StringBuffer out = new StringBuffer();
 	for (int i = 0; i < this.gene.length; i++) {
-	    out.append(String.format("\t%s: %f\n",
+	    out.append(String.format("\t%s: %.1f\n",
 		    PlayerConfiguration.GENE_NAMES[i], this.gene[i]));
 	}
 	return out.toString();
