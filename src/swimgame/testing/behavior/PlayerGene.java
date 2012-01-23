@@ -50,13 +50,13 @@ public class PlayerGene extends PlayerConfiguration {
 	// card set rating dependent values
 	final int maxValue = CARD_RATING_VALUES.size() - 1;
 	this.gene[PlayerConfiguration.STACKDROP_INITIAL] = CARD_RATING_VALUES
-		.get(Util.randomInt(maxValue));
+		.get(Util.getRandomInt(maxValue));
 	this.gene[PlayerConfiguration.STACKDROP] = CARD_RATING_VALUES.get(Util
-		.randomInt(maxValue));
+		.getRandomInt(maxValue));
 	this.gene[PlayerConfiguration.FORCE_DROP] = CARD_RATING_VALUES.get(Util
-		.randomInt(maxValue));
+		.getRandomInt(maxValue));
 	this.gene[PlayerConfiguration.WAIT_FOR_CARD] = CARD_RATING_VALUES
-		.get(Util.randomInt(maxValue));
+		.get(Util.getRandomInt(maxValue));
     }
 
     @Override

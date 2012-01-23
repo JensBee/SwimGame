@@ -24,8 +24,6 @@ import swimgame.table.logic.TableLogic;
  * 
  */
 public class CardStack {
-    /** Random number generator for all card stacks. */
-    // private static Random random = null;
     /** Denotes this stacks empty state. */
     private boolean empty = true;
 
@@ -668,7 +666,7 @@ public class CardStack {
 	// TODO: make this aware of available cards to be more intelligent
 	while (true) {
 	    // TODO: changed random here :)
-	    final int card = Util.randomInt(CardStack.STACK_SIZE - 1);
+	    final int card = Util.getRandomInt(CardStack.STACK_SIZE - 1);
 	    if (CardStack.this.cardStack[card] == CardStack.FLAG_HAS_CARD) {
 		// card is there .. take it
 		this.cardStack[card] = CardStack.FLAG_NO_CARD;

@@ -45,6 +45,7 @@ public class DefaultTableController extends AbstractTableController {
     @Override
     public final void start() {
 	Game game = this.tableLogic.getTable().getGame();
+	game.initialize();
 	this.tableLogic.initialize();
 
 	for (IPlayer player : this.tableLogic.getTable().getPlayer().asList()) {
@@ -67,11 +68,12 @@ public class DefaultTableController extends AbstractTableController {
 		e1.printStackTrace();
 	    }
 
-	    while (!this.tableLogic.getTable().getGame().isFinished()
-		    && game.getRound().hasNext()) {
+	    while (game.getRound().hasNext()) {
 
-		Debug.println(String.format("*** Game %d ** Round %d ***",
-			game.current(), game.getRound().getCurrent()));
+		Debug.println(
+			Debug.SYS,
+			String.format("*** Game %d ** Round %d ***",
+				game.current(), game.getRound().getCurrent()));
 
 		this.currentPlayer = this.tableLogic.getTable().getGame()
 			.getRound().nextPlayer();

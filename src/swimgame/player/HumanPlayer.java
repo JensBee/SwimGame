@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 
 import swimgame.out.Console;
-import swimgame.out.Debug;
 import swimgame.table.CardStack;
 import swimgame.table.logic.TableLogic;
 
@@ -51,7 +50,6 @@ public class HumanPlayer extends AbstractPlayer {
 
     @Override
     public final boolean keepCardSet() {
-	Debug.println("-----------Keep?");
 	this.getKey("Keep cards? [Y/n]");
 	return false;
     }
@@ -94,7 +92,6 @@ public class HumanPlayer extends AbstractPlayer {
      * @return Negative, if an error occoured
      */
     private int getPickCard() {
-	Debug.println("##PICK");
 	boolean input = false;
 	int returnCode = -2;
 	while (!input) {

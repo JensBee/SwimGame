@@ -40,7 +40,7 @@ public class MutablePlayer extends DefaultPlayer {
      *            The gene to set
      */
     public void setGene(PlayerGene gene) {
-	Debug.println(this.getClass(), "Recieved genes");
+	Debug.println(Debug.INFO, this.getClass(), "Recieved genes");
 	double[] geneValues = gene.getGene();
 	this.setGeneValue(PlayerConfiguration.FORCE_DROP, geneValues);
 	this.setGeneValue(PlayerConfiguration.WAIT_FOR_CARD, geneValues);

@@ -24,10 +24,11 @@ public class BehaviorTest {
      * @throws Exception
      */
     public static void main(String[] args) throws Exception {
-	Debug.debug = false;
+	Debug.debug = true;
+	Debug.debugLevel = Debug.INFO;
 	// stop the talky output
-	Console.blocked = true;
-	Console.ask = false;
+	Console.blocked = false;
+	Console.ask = true;
 
 	final BasicTable table = new BasicTable();
 	final GenePool genePool = new GenePool(NUMBER_OF_GENES);
@@ -51,24 +52,34 @@ public class BehaviorTest {
 	table.setMaxRoundsToPlay(NUMBER_OF_ROUNDS);
 	table.setNumberOfGamesToPlay(NUMBER_OF_GAMES);
 
+	// get length of player names for pretty printing
+	int playerNameLength = 0;
+	for (IPlayer player : table.getLogic().getTable().getPlayer().asList()) {
+	    if (player.toString().length() > playerNameLength) {
+		playerNameLength = player.toString().length();
+	    }
+	}
+
 	byte rank = 0;
 	double ratingPoints = 0;
 	double gamePoints = 0;
 	for (int i = 0; i < NUMBER_OF_TURNS; i++) {
-	    System.out.println("=== Turn " + i);
+	    System.out.print("=== Turn " + i);
 	    // start a game
 	    ratingPoints = 0;
 	    gamePoints = 0;
 	    rank = 0;
 	    table.start();
 
+	    System.out.print(" - Rounds played:"
+		    + table.getLogic().getTable().getGame().getRound()
+			    .getCurrent() + "\n");
+
 	    // game finished, now rate
 	    for (IPlayer player : table.getLogic().getTable().getPlayer()
 		    .getRanked().keySet()) {
 		rank++;
-		if (!player.equals(mutablePlayer)) {
-		    continue;
-		}
+
 		// how much points should we earn?
 		switch (rank) {
 		case 1:
@@ -85,14 +96,16 @@ public class BehaviorTest {
 		    break;
 		}
 		gamePoints = new CardStack(player.getCards()).getValue();
-		// store test-player ratings [place, points]
-		System.out.println("C:"
-			+ CardStack.cardsToString(player.getCards()) + " R: "
-			+ rank + " r:" + ratingPoints + " g:" + gamePoints);
-		gameRatings.add(new Double[] { ratingPoints, gamePoints });
 
-		// we're finished
-		break;
+		// debug out
+		System.out.println(String.format("Rating: %-"
+			+ playerNameLength
+			+ "s %15s Rank:%d Rating:%.2f Points:%.2f", player,
+			CardStack.cardsToString(player.getCards()), rank,
+			ratingPoints, gamePoints));
+
+		// store test-player ratings [place, points]
+		gameRatings.add(new Double[] { ratingPoints, gamePoints });
 	    }
 	}
 	// just to show something

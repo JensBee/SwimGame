@@ -10,7 +10,7 @@ import swimgame.player.IPlayer;
  */
 public class Game {
     /** Indicates if a game is finished. */
-    private final boolean finished = false;
+    // private final boolean finished = false;
     /** The number of games to play in turn. */
     private int numberOfGamesToPlay = 1;
     /** The current game number. */
@@ -110,6 +110,13 @@ public class Game {
 	this.numberOfGamesToPlay = numberOfGames;
     }
 
+    /** Setup the game logic. */
+    public final void initialize() {
+	this.players = this.table.player.iterator(true);
+	this.currentGameNumber = 0;
+	this.round.initialize();
+    }
+
     /**
      * Check, if there's a next game to play.
      * 
@@ -121,18 +128,6 @@ public class Game {
 	}
 	return false;
     }
-
-    /** Finish the current Game */
-    // private void finish() {
-    // this.table.player.fireEvent(TableLogic.Event.GAME_FINISHED);
-    // this.finished = true;
-    // // add points for each player to the global points counter
-    // for (IPlayer player : this.table.player.asList()) {
-    // final byte[] playerCards = player.getCards();
-    // CardStack playerCardStack = new CardStack(playerCards);
-    // this.table.player.addPoints(player, playerCardStack.getValue());
-    // }
-    // }
 
     /**
      * Prepare the next game. This should handle all needed steps to start a new
@@ -157,15 +152,6 @@ public class Game {
 	this.table.resetCards();
 	this.table.dealOutCards(this.startingPlayer);
 	return this.startingPlayer;
-    }
-
-    /**
-     * Test, if the current game is finished.
-     * 
-     * @return True if the game has finished
-     */
-    public final boolean isFinished() {
-	return this.finished;
     }
 
     /**

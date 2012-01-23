@@ -10,7 +10,7 @@ public class Util {
      *            Maximum int value
      * @return Random int in the given range
      */
-    public static int randomInt(final int min, final int max) {
+    public static int getRandomInt(final int min, final int max) {
 	return min + (int) (Math.random() * ((max - min) + 1));
     }
 
@@ -21,7 +21,7 @@ public class Util {
      *            Maximum int value
      * @return Random int from 0 to max
      */
-    public static int randomInt(final int max) {
-	return Util.randomInt(0, max);
+    public static int getRandomInt(final int max) {
+	return Util.getRandomInt(0, max);
     }
 }

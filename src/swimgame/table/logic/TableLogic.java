@@ -142,14 +142,14 @@ public class TableLogic {
 
 	// three of a color?
 	cardsCount = 0;
-	for (byte card : CardStack.getCardsByColor(userCardStack
+	for (byte card : CardStack.getCardsByColor(CardStack
 		.getCardColor(cards[0]))) {
 	    if (userCardStack.hasCard(card)) {
 		cardsCount++;
 	    }
 	}
 	if (cardsCount == RULE_GOAL_CARDS_BY_COLOR) {
-	    Debug.println(Table.class, "Three of a color!");
+	    Debug.println(Debug.INFO, Table.class, "Three of a color!");
 	    return true;
 	}
 
@@ -162,7 +162,7 @@ public class TableLogic {
 	    }
 	}
 	if (cardsCount == RULE_GOAL_CARDS_BY_TYPE) {
-	    Debug.println(Table.class, "Three of a type!");
+	    Debug.println(Debug.INFO, Table.class, "Three of a type!");
 	    return true;
 	}
 
@@ -262,7 +262,7 @@ public class TableLogic {
 	    this.table.close();
 	    this.table.player.fireEvent(Event.TABLE_CLOSED, null);
 	    if (Debug.debug) {
-		Debug.println(this.getClass(), String.format(
+		Debug.println(Debug.INFO, this.getClass(), String.format(
 			"Players: %d  Maximum rounds: %d",
 			this.table.player.amount(),
 			this.table.game.round.getMaxLength()));

@@ -94,8 +94,8 @@ public class Round implements Iterator<Integer> {
      * have joined the table.
      */
     final void initialize() {
+	this.reset();
 	this.currentRound = -1;
-	this.finished = false;
 	this.currentPlayer = this.players.next();
     }
 

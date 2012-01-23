@@ -3,6 +3,7 @@ package swimgame.testing.behavior;
 import java.util.HashMap;
 import java.util.Map;
 
+import swimgame.Util;
 import swimgame.out.Debug;
 
 /**
@@ -24,11 +25,11 @@ public class GenePool {
      *            The size of this gene pool
      */
     GenePool(final int size) {
-	Debug.printf(this.getClass(), "Initializing pool with %d genes.. ",
-		size);
+	Debug.printf(Debug.INFO, this.getClass(),
+		"Initializing pool with %d genes.. ", size);
 	this.genePool = new HashMap<PlayerGene, Integer>(size);
 	this.initializePool(size);
-	Debug.printf(this.getClass(),
+	Debug.printf(Debug.INFO, this.getClass(),
 		"Done initializing pool with %d genes.\n", size);
     }
 
@@ -39,13 +40,13 @@ public class GenePool {
 	// then add the random ones
 	for (int i = 0; i < (poolSize); i++) {
 	    gene = new PlayerGene();
-	    Debug.printf(this.getClass(), "Gene:\n %s", gene);
+	    Debug.printf(Debug.INFO, this.getClass(), "Gene:\n %s", gene);
 	    this.genePool.put(gene, 0);
 	}
     }
 
     public PlayerGene getRandomGene() {
-	int geneIndex = 0 + (int) (Math.random() * ((this.genePool.size() - 0) + 1));
+	int geneIndex = Util.getRandomInt(this.genePool.size() - 1);
 	int i = 0;
 	PlayerGene gene = null;
 	for (PlayerGene g : this.genePool.keySet()) {

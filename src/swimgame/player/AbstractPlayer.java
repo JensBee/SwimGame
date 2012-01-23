@@ -41,14 +41,15 @@ abstract class AbstractPlayer implements IPlayer {
      * @return Player name chosen from a predefined set
      */
     String getRandomName() {
-	return AbstractPlayer.playerNames.remove(Util.randomInt(playerNames
+	return AbstractPlayer.playerNames.remove(Util.getRandomInt(playerNames
 		.size() - 1));
     }
 
     @Override
     public void setCards(final byte[] cards) {
 	this.setCardStack(new CardStack(cards));
-	Debug.printf(this, "Recieved cards: %s\n", this.getCardStack());
+	Debug.printf(Debug.INFO, this, "Recieved cards: %s\n",
+		this.getCardStack());
     }
 
     /**
