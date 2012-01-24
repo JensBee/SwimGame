@@ -24,4 +24,33 @@ public class Util {
     public static int getRandomInt(final int max) {
 	return Util.getRandomInt(0, max);
     }
+
+    /**
+     * Calculate with default minimum fixed to zero.
+     * 
+     * @param max
+     *            Maximum value
+     * @param value
+     *            Current value
+     * @return Normalized value
+     */
+    public static double normalize(final double max, final double value) {
+	return Util.normalize(0, max, value);
+    }
+
+    /**
+     * Calculate a normalized value.
+     * 
+     * @param min
+     *            Minimum value
+     * @param max
+     *            Maximum value
+     * @param value
+     *            Current value
+     * @return Normalized value
+     */
+    public static double normalize(final double min, final double max,
+	    final double value) {
+	return new Double(((value - min) / (max - min)) * 10);
+    }
 }
