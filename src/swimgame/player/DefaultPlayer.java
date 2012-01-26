@@ -2,8 +2,8 @@ package swimgame.player;
 
 import swimgame.out.Debug;
 import swimgame.player.rating.Card;
+import swimgame.player.rating.Stack;
 import swimgame.table.CardStack;
-import swimgame.table.DefaultTableController;
 import swimgame.table.logic.TableLogic;
 
 /**
@@ -47,8 +47,6 @@ public class DefaultPlayer extends AbstractPlayer {
     // nested classes
     /** Nested class for rating cards. */
     private Card cardRating = null;
-    /** Nested class for rating a card stack. */
-    private final StackRating stackRating = new StackRating();
 
     /**
      * Default constructor.
@@ -89,205 +87,6 @@ public class DefaultPlayer extends AbstractPlayer {
 	// this.gameRound = 0;
 	if (this.cardRating != null) {
 	    this.cardRating.reset();
-	}
-    }
-
-    /**
-     * General rating helper functions.
-     * 
-     * @author <a href="mailto:code@jens-bertram.net">Jens Bertram</a>
-     * 
-     */
-    private static class Rating {
-	/**
-	 * Calculate with default minimum fixed to zero.
-	 * 
-	 * @param max
-	 *            Maximum value
-	 * @param value
-	 *            Current value
-	 * @return Normalized value
-	 */
-	protected static double normalize(final double max, final double value) {
-	    return Rating.normalize(0, max, value);
-	}
-
-	/**
-	 * Calculate a normalized value.
-	 * 
-	 * @param min
-	 *            Minimum value
-	 * @param max
-	 *            Maximum value
-	 * @param value
-	 *            Current value
-	 * @return Normalized value
-	 */
-	protected static double normalize(final double min, final double max,
-		final double value) {
-	    return new Double(((value - min) / (max - min)) * 10);
-	}
-    }
-
-    /**
-     * Stack rating functions
-     * 
-     * @author <a href="mailto:code@jens-bertram.net">Jens Bertram</a>
-     * 
-     */
-    private class StackRating {
-	protected static final int NO_RESULT = -1;
-
-	/**
-	 * Check, how many cards are missing to reach a goal state. No
-	 * calculation of values is involved here
-	 * 
-	 * @return How many cards are missing to reach a goal state
-	 *         [color][steps][type][steps]
-	 */
-	protected byte[] goalDistance(final byte[] cards) {
-	    byte positionColor;
-	    byte valueColor;
-	    byte positionType;
-	    byte valueType;
-	    byte count;
-	    byte[] distances = new byte[] { CardStack.FLAG_UNINITIALIZED,
-		    CardStack.FLAG_UNINITIALIZED, CardStack.FLAG_UNINITIALIZED,
-		    CardStack.FLAG_UNINITIALIZED };
-
-	    positionColor = -1;
-	    positionType = -1;
-	    valueColor = -1;
-	    valueType = -1;
-	    for (byte card : cards) {
-		count = 0;
-		final int color = CardStack.getCardColor(card);
-		for (byte cardByColor : CardStack.getCardsByColor(color)) {
-		    if (DefaultPlayer.this.cardStack.hasCard(cardByColor)) {
-			count++;
-		    }
-		}
-		// store max
-		if (count > valueColor) {
-		    valueColor = count;
-		    positionColor = (byte) color;
-		}
-
-		count = 0;
-		final int type = CardStack.getCardType(card);
-		for (byte cardByType : CardStack.getCardsByType(type)) {
-		    if (DefaultPlayer.this.cardStack.hasCard(cardByType)) {
-			count++;
-		    }
-		}
-		// store max
-		if (count > valueType) {
-		    valueType = count;
-		    positionType = (byte) type;
-		}
-	    }
-
-	    if (valueColor >= 2) {
-		distances[0] = positionColor;
-		distances[1] = (byte) ((CardStack.CARDS_MAX_COLOR - 1) - valueColor);
-	    }
-	    if (valueType >= 2) {
-		distances[2] = positionType;
-		distances[3] = (byte) (TableLogic.RULE_GOAL_CARDS_BY_TYPE - valueType);
-	    }
-	    return distances;
-	}
-
-	protected double dropValue(final byte[] cards) {
-	    double value;
-	    final byte[] goalDistances = this.goalDistance(cards);
-	    if ((goalDistances[1] == 0) || (goalDistances[3] == 0)) {
-		value = DefaultPlayer.this.cardStack.getValue();
-	    } else {
-		value = StackRating.NO_RESULT;
-	    }
-	    return value;
-	}
-
-	/**
-	 * Create a rating array for all currently not-owned cards. This may be
-	 * helpful to decide, witch card to pick from the table.
-	 */
-	protected void calculateNeededCards() {
-	    DefaultPlayer.this.cardStackNeed.fill(CardStack.FLAG_UNINITIALIZED);
-	    byte[] typeChecked = new byte[CardStack.CARDS_MAX_CARD];
-
-	    // walk the stack by color
-	    for (int cardsColor = 0; cardsColor < CardStack.CARDS_MAX_COLOR; cardsColor++) {
-		int cardOffset;
-		int matches;
-
-		// rate by color
-		matches = 0;
-		cardOffset = (cardsColor * (CardStack.CARDS_MAX_CARD));
-		// count matching cards by color
-		for (int cardNum = 0; cardNum < CardStack.CARDS_MAX_CARD; cardNum++) {
-		    int cardToCheck = cardOffset + cardNum;
-		    if (DefaultPlayer.this.cardStack.hasCard(cardToCheck)) {
-			matches++;
-		    }
-		}
-
-		// skip further rating, if no card found in current color
-		if (matches > 0) {
-		    // color: rate the missing ones based on the number of
-		    // matches
-		    for (int cardNum = 0; cardNum < CardStack.CARDS_MAX_CARD; cardNum++) {
-			int cardToCheck = cardOffset + cardNum;
-			if (!DefaultPlayer.this.cardStack.hasCard(cardToCheck)) {
-			    int ratingValue = Card.getCardRating(cardToCheck)
-				    + (matches * Card.INFLUENCE_SAME_COLOR);
-			    Card.uprate(DefaultPlayer.this.cardStackNeed,
-				    cardToCheck, ratingValue);
-			}
-		    }
-
-		    // rate by type
-		    cardOffset = CardStack.CARDS_MAX_CARD;
-		    // count matching cards by type
-		    for (int cardNum = 0; cardNum < CardStack.CARDS_MAX_CARD; cardNum++) {
-			if (typeChecked[cardNum] == 1) {
-			    continue;
-			}
-
-			int ownedCard = cardNum
-				+ (cardsColor * (CardStack.CARDS_MAX_CARD));
-
-			// if we found a card check remaining colors for this
-			// card for matches
-			if (DefaultPlayer.this.cardStack.hasCard(ownedCard)) {
-			    typeChecked[Card.getCardRating(cardNum)] = 1;
-			    for (int i = cardsColor; i < CardStack.CARDS_MAX_COLOR; i++) {
-				int cardToCheck = cardNum + (i * cardOffset);
-				if ((cardToCheck != ownedCard)
-					&& DefaultPlayer.this.cardStack
-						.hasCard(cardToCheck)) {
-				    int ratingValue = DefaultPlayer.this.cardStackNeed
-					    .getCardValue(cardToCheck)
-					    + Card.INFLUENCE_SAME_TYPE
-					    + (int) (DefaultTableController.WORTH_THREE_OF_SAME_TYPE / 3);
-
-				    for (int fixedTypeCard = 0; fixedTypeCard < CardStack.CARDS_MAX_COLOR; fixedTypeCard++) {
-					int cardToRate = cardNum
-						+ (fixedTypeCard * cardOffset);
-					if (!DefaultPlayer.this.cardStack
-						.hasCard(cardToRate)) {
-					    Card.uprate(
-						    DefaultPlayer.this.cardStackNeed,
-						    cardToRate, ratingValue);
-					}
-				    }
-				}
-			    }
-			}
-		    }
-		}
-	    }
 	}
     }
 
@@ -390,7 +189,7 @@ public class DefaultPlayer extends AbstractPlayer {
 		"My stack: " + this.cardStack.toString());
 
 	// regenerate priority list of needed cards
-	this.stackRating.calculateNeededCards();
+	Stack.calculateNeededCards(this.cardStack, this.cardStackNeed);
 
 	// get cards on table
 	index = 0;
@@ -425,8 +224,7 @@ public class DefaultPlayer extends AbstractPlayer {
 		+ this.cardStackNeed.dump().toString() + "\n");
 
 	// estimate goal distance
-	byte[] goalDistance = this.stackRating.goalDistance(this.cardStack
-		.getCards());
+	byte[] goalDistance = Stack.goalDistance(this.cardStack);
 	if (Debug.debug) {
 	    if ((goalDistance[0] != -1) || (goalDistance[2] != -1)) {
 		Debug.print(Debug.INFO, this, "Goal distance(s): ");
@@ -447,7 +245,7 @@ public class DefaultPlayer extends AbstractPlayer {
 	}
 
 	// stack value
-	dropValue = this.stackRating.dropValue(this.cardStack.getCards());
+	dropValue = Stack.dropValue(this.cardStack);
 	Debug.println(Debug.INFO, this, "Drop value: " + dropValue);
 
 	// make a drop suggestion
@@ -481,7 +279,7 @@ public class DefaultPlayer extends AbstractPlayer {
 	}
 
 	// end game?
-	if (!this.gameIsClosed && (dropValue > StackRating.NO_RESULT)) {
+	if (!this.gameIsClosed && (dropValue > Stack.NO_RESULT)) {
 	    this.log("*knock!, knock!*");
 	    this.tableLogic.interact(TableLogic.Action.END_CALL,
 		    this.cardStack.getCards());
