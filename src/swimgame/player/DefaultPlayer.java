@@ -3,7 +3,6 @@ package swimgame.player;
 import swimgame.out.Debug;
 import swimgame.player.rating.Card;
 import swimgame.table.CardStack;
-import swimgame.table.CardStack.CardIterator;
 import swimgame.table.DefaultTableController;
 import swimgame.table.logic.TableLogic;
 
@@ -130,288 +129,6 @@ public class DefaultPlayer extends AbstractPlayer {
 	}
     }
 
-    // /**
-    // * Card rating functions.
-    // *
-    // * @author <a href="mailto:code@jens-bertram.net">Jens Bertram</a>
-    // *
-    // */
-    // private class CardRating {
-    // private static final double RATING_DEFAULT = -1;
-    // /** Stores ratings for later calculations. */
-    // private final double[] ratings = new double[] { RATING_DEFAULT,
-    // RATING_DEFAULT, RATING_DEFAULT, RATING_DEFAULT, RATING_DEFAULT,
-    // RATING_DEFAULT };
-    // private static final int RATING_COLOR = 0;
-    // private static final int RATING_COLORFREQUENCY = 1;
-    // private static final int RATING_TYPE = 2;
-    // private static final int RATING_VALUE = 3;
-    // private static final int RATING_AVAILABILITY = 4;
-    // private static final int RATING_GOALDISTANCE = 5;
-    //
-    // // rating influencing parameters
-    // private static final int INFLUENCE_SAME_COLOR = 5;
-    // private static final int INFLUENCE_SAME_TYPE = 10;
-    // /** Initial rating for cards we've not seen on the table. */
-    // private static final int INFLUENCE_DEFAULT_UNSEEN = -5;
-    // /** Maximum value a card rating by type may reach. */
-    // protected final int worth_max_by_type = (2 *
-    // CardRating.INFLUENCE_SAME_TYPE)
-    // + this.getNormalizedCardRating(CardStack.STACK_SIZE - 1)
-    // + this.getNormalizedCardRating(CardStack.STACK_SIZE - 2)
-    // + this.getNormalizedCardRating(CardStack.STACK_SIZE - 3);
-    // /** Maximum value a card rating by color may reach. */
-    // private final int worth_max_by_color = (2 *
-    // CardRating.INFLUENCE_SAME_COLOR)
-    // + this.getNormalizedCardRating(CardStack.STACK_SIZE - 1)
-    // + this.getNormalizedCardRating(CardStack.STACK_SIZE - 2)
-    // + this.getNormalizedCardRating(CardStack.STACK_SIZE - 3);
-    //
-    // /** General function to rate a card based on it's color or value. */
-    // private int rateColorOrType(final int card, final byte[] cardsArray,
-    // final int influence) {
-    // int cardValue = 0;
-    // int same = 0;
-    //
-    // for (byte stackCard : cardsArray) {
-    // if (DefaultPlayer.this.cardStack.hasCard(stackCard)) {
-    // same++;
-    // cardValue = cardValue + this.getNormalizedCardRating(card);
-    //
-    // // modify rating if there are more cards
-    // cardValue = (same > 1) ? (cardValue + influence)
-    // : cardValue;
-    // }
-    // }
-    // return cardValue;
-    // }
-    //
-    // /** Rate a card based on other cards of the same color. */
-    // protected double byColor(final int card) {
-    // final int cardValue = this.rateColorOrType(card,
-    // CardStack.getCardsByColor(CardStack.getCardColor(card)),
-    // CardRating.INFLUENCE_SAME_COLOR);
-    // this.ratings[RATING_COLOR] = Rating.normalize(
-    // this.worth_max_by_color, cardValue);
-    // return this.ratings[RATING_COLOR];
-    // }
-    //
-    // protected double byColorFrequency(final int card) {
-    // int maxValue = 0;
-    // for (byte value : DefaultPlayer.this.dropColorIndex) {
-    // maxValue = (value > maxValue) ? value : maxValue;
-    // }
-    //
-    // if (maxValue == 0) {
-    // this.ratings[RATING_COLORFREQUENCY] = 0;
-    // } else {
-    // this.ratings[RATING_COLORFREQUENCY] = Rating.normalize(
-    // maxValue, DefaultPlayer.this.dropColorIndex[CardStack
-    // .getCardColor(card)]);
-    // }
-    // return this.ratings[RATING_COLORFREQUENCY];
-    // }
-    //
-    // /** Rate a card based on it's type and cards of the same type. */
-    // protected double byType(final int card) {
-    // final int cardValue = this.rateColorOrType(card,
-    // CardStack.getCardsByType(CardStack.getCardType(card)),
-    // CardRating.INFLUENCE_SAME_TYPE);
-    // this.ratings[RATING_TYPE] = Rating.normalize(
-    // this.worth_max_by_type, cardValue);
-    // return this.ratings[RATING_TYPE];
-    // }
-    //
-    // /**
-    // * Rate a card based on it's card value.
-    // *
-    // * @param card
-    // * Card to rate
-    // * @return Rating
-    // */
-    // protected double byValue(final int card) {
-    // this.ratings[RATING_VALUE] = Rating.normalize(
-    // CardStack.CARDS_MAX_CARD - 1, this.getCardRating(card));
-    // return this.ratings[RATING_VALUE];
-    // }
-    //
-    // /**
-    // * Rate a card by it's probability to be in the game. This means, if we
-    // * have seen a card dropped on the table there's a possibility to get
-    // * this single card to complete our stack.
-    // *
-    // * @param card
-    // * Card to check
-    // * @return Rating
-    // */
-    // protected double byAvailability(final int card) {
-    // int maxValue = 0;
-    // for (byte stackCard : DefaultPlayer.this.cardStackTable.getCards()) {
-    // maxValue = DefaultPlayer.this.cardStackTable
-    // .getCardValue(stackCard) > maxValue ? DefaultPlayer.this.cardStackTable
-    // .getCardValue(stackCard) : maxValue;
-    // }
-    // this.ratings[RATING_AVAILABILITY] = Rating.normalize(
-    // DefaultPlayer.CardRating.INFLUENCE_DEFAULT_UNSEEN,
-    // maxValue,
-    // DefaultPlayer.this.cardStackTable.getCardValue(card));
-    // return this.ratings[RATING_AVAILABILITY];
-    // }
-    //
-    // /**
-    // * Shortcut to assign a new rating to a card, only if it's higher than
-    // * the existing rating
-    // *
-    // * @param stack
-    // * The stack to search in
-    // * @param card
-    // * The card to work with
-    // * @param newValue
-    // * The new value we try to assign
-    // */
-    // protected void uprate(final CardStack stack, final int card,
-    // final int newValue) {
-    // final int oldValue = stack.getCardValue(card);
-    // stack.setCardValue(card, (byte) (oldValue > newValue ? oldValue
-    // : newValue));
-    // }
-    //
-    // /**
-    // * Get the rating for this card
-    // *
-    // */
-    // protected byte getCardRating(final int card) {
-    // byte rating;
-    //
-    // CardStack.validateCardIndex(card);
-    // if (card < CardStack.CARDS_MAX_CARD) {
-    // rating = (byte) card;
-    // } else {
-    // rating = (byte) (card - ((card / CardStack.CARDS_MAX_CARD) *
-    // CardStack.CARDS_MAX_CARD));
-    // }
-    // return rating;
-    // }
-    //
-    // /**
-    // * Get a normalized value of a card
-    // *
-    // * <pre>
-    // * J, Q, K -> 3; A -> 4
-    // * 7 -> 0; 8 -> 1; 9 -> 2 (basically their array locations)
-    // * </pre>
-    // */
-    // protected int getNormalizedCardRating(final int card) {
-    // final int value = this.getCardRating(card);
-    // return (value > 2) ? (value < 7 ? 3 : 4) : value;
-    // }
-    //
-    // protected void reset() {
-    // DefaultPlayer.this.dropColorIndex = new byte[CardStack.CARDS_MAX_COLOR];
-    // }
-    //
-    // protected void cardSeen(final byte card) {
-    // DefaultPlayer.this.cardStackTable.addCard(card);
-    // DefaultPlayer.this.dropColorIndex[CardStack.getCardColor(card)] = (byte)
-    // (DefaultPlayer.this.dropColorIndex[CardStack
-    // .getCardColor(card)] + 1);
-    // }
-    //
-    // protected double byGoalDistance(final int card) {
-    // double rating;
-    // this.ratings[RATING_GOALDISTANCE] = 0;
-    //
-    // final byte[] distances = DefaultPlayer.this.stackRating
-    // .goalDistance(DefaultPlayer.this.cardStack.getCards());
-    //
-    // // bad
-    // if (distances[1] == -1) {
-    // this.ratings[RATING_GOALDISTANCE] = Rating.normalize(-1, 1,
-    // distances[1]);
-    // rating = this.ratings[RATING_GOALDISTANCE];
-    // } else {
-    //
-    // double colorValue = 0;
-    // double typeValue = 0;
-    // if (distances[0] == CardStack.getCardColor(card)) {
-    // colorValue = Rating.normalize(-1, 1, distances[1]);
-    // } else if (distances[2] == CardStack.getCardType(card)) {
-    // typeValue = Rating.normalize(-1, 1, distances[3]);
-    // }
-    //
-    // this.ratings[RATING_GOALDISTANCE] = (colorValue > typeValue) ? colorValue
-    // : typeValue;
-    // rating = this.ratings[RATING_GOALDISTANCE];
-    // }
-    // return rating;
-    // }
-    //
-    // /**
-    // * Get the overall rating for all single ratings processed for a card
-    // * between two resets
-    // *
-    // * @return
-    // */
-    // protected double getOverallRating() {
-    // double overall = 0;
-    // int ratingCount = 0;
-    // for (int i = 0; i < this.ratings.length; i++) {
-    // if (this.ratings[i] != RATING_DEFAULT) {
-    // ratingCount++;
-    // overall = overall + this.ratings[i];
-    // }
-    // }
-    // return overall / ratingCount;
-    // }
-    //
-    // protected double getOverallRating(final int card) {
-    // this.byAvailability(card);
-    // this.byColor(card);
-    // this.byColorFrequency(card);
-    // this.byGoalDistance(card);
-    // this.byType(card);
-    // this.byValue(card);
-    // return this.getOverallRating();
-    // }
-    //
-    // /**
-    // * Dump the rating currently stored for a card
-    // *
-    // * @return
-    // */
-    // protected String dumpRating() {
-    // StringBuffer ratingString = new StringBuffer();
-    //
-    // if (this.ratings[RATING_COLOR] != RATING_DEFAULT) {
-    // ratingString.append(String.format(" color(%.2f)",
-    // this.ratings[RATING_COLOR]));
-    // }
-    // if (this.ratings[RATING_TYPE] != RATING_DEFAULT) {
-    // ratingString.append(String.format(" type(%.2f)",
-    // this.ratings[RATING_TYPE]));
-    // }
-    // if (this.ratings[RATING_VALUE] != RATING_DEFAULT) {
-    // ratingString.append(String.format(" value(%.2f)",
-    // this.ratings[RATING_VALUE]));
-    // }
-    // if (this.ratings[RATING_AVAILABILITY] != RATING_DEFAULT) {
-    // ratingString.append(String.format(" availability(%.2f)",
-    // this.ratings[RATING_AVAILABILITY]));
-    // }
-    // if (this.ratings[RATING_COLORFREQUENCY] != RATING_DEFAULT) {
-    // ratingString.append(String.format(" color-frequency(%.2f)",
-    // this.ratings[RATING_COLORFREQUENCY]));
-    // }
-    // if (this.ratings[RATING_GOALDISTANCE] != RATING_DEFAULT) {
-    // ratingString.append(String.format(" goal-distance(%.2f)",
-    // this.ratings[RATING_GOALDISTANCE]));
-    // }
-    //
-    // return String.format("%.2f =%s", this.getOverallRating(),
-    // ratingString.toString());
-    // }
-    // }
-
     /**
      * Stack rating functions
      * 
@@ -485,72 +202,9 @@ public class DefaultPlayer extends AbstractPlayer {
 	    double value;
 	    final byte[] goalDistances = this.goalDistance(cards);
 	    if ((goalDistances[1] == 0) || (goalDistances[3] == 0)) {
-		value = this.byValue();
+		value = DefaultPlayer.this.cardStack.getValue();
 	    } else {
 		value = StackRating.NO_RESULT;
-	    }
-	    return value;
-	}
-
-	/** Returns the current value of the stack. */
-	protected double byValue() {
-	    final CardIterator sI = DefaultPlayer.this.cardStack.new CardIterator();
-
-	    double value = 0;
-	    int sameType = 0;
-
-	    while (sI.hasNext()) {
-		sameType = 0;
-		double currentValue = 0;
-		// skip if we don't own this card
-		if (sI.next() == CardStack.FLAG_NO_CARD) {
-		    continue;
-		}
-
-		// do we have the same card type?
-		for (byte b : CardStack.getCardsByType(sI.getCardType())) {
-		    if (DefaultPlayer.this.cardStack.getCardValue(b) == CardStack.FLAG_HAS_CARD) {
-			sameType++;
-		    }
-		}
-
-		// same type in three colors is fixed value
-		if (sameType >= 3) {
-		    return DefaultTableController.WORTH_THREE_OF_SAME_TYPE;
-		}
-
-		// do we have another card of the same color?
-		for (byte card : CardStack.getCardsByColor(sI.getCardColor())) {
-		    if (DefaultPlayer.this.cardStack.hasCard(card)) {
-			// calculate the real value here
-			currentValue = currentValue
-				+ Card.getNormalizedCardRating(card)
-				+ (CardStack.CARDS_MAX_CARD - 1);
-		    }
-		}
-
-		value = (currentValue > value) ? currentValue : value;
-	    }
-
-	    if ((sameType == 2) && (B_RISKYNESS >= 2)) {
-		// MODEL:risk drop for three of same type
-		Debug.println(Debug.INFO, DefaultPlayer.this,
-			"#MODEL:risk Waiting for third card.");
-		if (value < DefaultPlayer.this.behavior
-			.get(PlayerConfiguration.WAIT_FOR_CARD)) {
-		    value = (DefaultTableController.WORTH_THREE_OF_SAME_TYPE / 3) * 2;
-		} else if (B_RISKYNESS > 2) {
-		    Debug.println(Debug.INFO, DefaultPlayer.this,
-			    "#MODEL:risk Waiting for third card, even threshold looks good.");
-		}
-	    }
-
-	    if (Debug.debug) {
-		double dMin = CardStack.STACKVALUE_MIN - value;
-		double dMax = CardStack.STACKVALUE_MAX - value;
-		Debug.println(Debug.INFO, DefaultPlayer.this, String.format(
-			"Stack value: abs(%s) dMax(+%.1f) dMin(-%.1f)",
-			Double.toString(value), dMax, dMin));
 	    }
 	    return value;
 	}
@@ -605,8 +259,7 @@ public class DefaultPlayer extends AbstractPlayer {
 				+ (cardsColor * (CardStack.CARDS_MAX_CARD));
 
 			// if we found a card check remaining colors for this
-			// card
-			// for matches
+			// card for matches
 			if (DefaultPlayer.this.cardStack.hasCard(ownedCard)) {
 			    typeChecked[Card.getCardRating(cardNum)] = 1;
 			    for (int i = cardsColor; i < CardStack.CARDS_MAX_COLOR; i++) {
@@ -656,7 +309,7 @@ public class DefaultPlayer extends AbstractPlayer {
 	Debug.println(Debug.TALK, this, "Deciding on my current card set: "
 		+ this.cardStack);
 
-	if (this.stackRating.byValue() < this.behavior
+	if (DefaultPlayer.this.cardStack.getValue() < this.behavior
 		.get(PlayerConfiguration.STACKDROP_INITIAL)) {
 	    // drop immediately if blow threshold
 	    Debug.println(Debug.TALK, this, String.format(
