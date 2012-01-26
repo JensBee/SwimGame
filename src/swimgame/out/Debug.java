@@ -5,18 +5,36 @@ import java.io.PrintStream;
 import swimgame.player.IPlayer;
 
 public class Debug {
+    /** Debug level for a talkish level messages. */
     public static final int TALK = 3;
+    /** Debug level for information level messages. */
     public static final int INFO = 2;
+    /** Debug level for system level messages. */
     public static final int SYS = 1;
 
+    /**
+     * On release this should be set to
+     * 
+     * <pre>
+     * static final boolean debug = false;
+     * </pre>
+     * 
+     * so the compiler will remove all debugging parts.
+     */
+    // CHECKSTYLE:OFF
     public static boolean debug = false;
     public static int debugLevel = INFO;
+    // CHECKSTYLE:ON
+    /** Debug message prefix. */
     private static final String PREFIX = "::DBG: ";
+    /** Output stream for debugging messages. */
     private static PrintStream out = System.out;
 
     /**
      * General String output function, without debug as prefix.
      * 
+     * @param level
+     *            The debugging level
      * @param message
      *            Message to print
      */
@@ -29,6 +47,8 @@ public class Debug {
     /**
      * Print a message with optional debug prefix.
      * 
+     * @param level
+     *            The debugging level
      * @param prefix
      *            If true the debug prefix will be printed
      * @param message
@@ -46,6 +66,17 @@ public class Debug {
 	}
     }
 
+    /**
+     * 
+     * @param level
+     *            The debugging level
+     * @param obj
+     *            Object as prefix
+     * @param prefix
+     *            Debugging prefix
+     * @param message
+     *            Message to print
+     */
     public static void print(final int level, final Object obj,
 	    final boolean prefix, final String message) {
 	if (!debug || (level > debugLevel)) {

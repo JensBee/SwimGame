@@ -1,6 +1,7 @@
 package swimgame.player.rating;
 
 import swimgame.Util;
+import swimgame.out.Debug;
 import swimgame.table.CardStack;
 
 /**
@@ -10,9 +11,9 @@ import swimgame.table.CardStack;
  */
 public class Card {
     // values that should be changeable
-    static final int AVAILABILITY_UNSEEN = -5;
-    private static final int INFLUENCE_SAME_COLOR = 5;
-    private static final int INFLUENCE_SAME_TYPE = 10;
+    public static final int AVAILABILITY_UNSEEN = -5;
+    public static final int INFLUENCE_SAME_COLOR = 5;
+    public static final int INFLUENCE_SAME_TYPE = 10;
 
     // fixed values
     /** Maximum value a card rating by type may reach. */
@@ -29,12 +30,18 @@ public class Card {
     // internal values
     /** {@link CardStack} used for pipelined processing. */
     private CardStack searchStack;
+    /** {@link CardStack} with cards seen in a game. */
+    private CardStack colorStack;
     /** Card used for pipelined processing. */
     private int card;
     /** Rating for all pipelined processed. */
     private double pipelineRating = 0;
     /** Steps taken in pipelined processing. */
     private int pipelineSteps = 0;
+
+    public Card() {
+	this.reset();
+    }
 
     /**
      * Setup the variables needed to run the pipeline. This should be run at the
@@ -55,9 +62,7 @@ public class Card {
      * @return Card
      */
     public final Card pipeline(final CardStack newSearchStack, final int newCard) {
-	// reset previous ratings
-	this.pipelineSteps = 0;
-	this.pipelineRating = 0;
+	this.resetRating();
 	// init pipe variables
 	this.searchStack = newSearchStack;
 	this.card = newCard;
@@ -65,13 +70,49 @@ public class Card {
 	return this;
     }
 
+    private void resetRating() {
+	// reset previous ratings
+	this.pipelineSteps = 0;
+	this.pipelineRating = 0;
+	this.colorStack = new CardStack();
+    }
+
+    public void reset() {
+	this.resetRating();
+	this.searchStack = new CardStack();
+	this.card = 0;
+    }
+
     /**
      * Get the overall rating for a pipelined processing.
      * 
      * @return Overall rating of all pipelined ratings
      */
-    public double getRating() {
+    public final double getRating() {
+	if (this.pipelineSteps == 0) {
+	    // run the default pipeline
+	    this.byAvailability();
+	    this.byColor();
+	    this.byColorFrequency();
+	    this.byGoalDistance();
+	    this.byType();
+	    this.byValue();
+	}
+	if (Debug.debug) {
+	    double rating = this.pipelineRating / this.pipelineSteps;
+	    Debug.printf(Debug.INFO, Card.class, "getRating: %s %.2f\n",
+		    CardStack.cardToString(this.card), rating);
+	    return rating;
+	}
 	return this.pipelineRating / this.pipelineSteps;
+    }
+
+    public final double getRating(final CardStack newSearchStack, final int card) {
+	Debug.printf(Debug.INFO, Card.class, "getRating: %s\n",
+		CardStack.cardToString(card));
+	this.searchStack = newSearchStack;
+	this.card = card;
+	return this.getRating();
     }
 
     /**
@@ -92,6 +133,13 @@ public class Card {
 	    if (searchStackValue > maxValue) {
 		maxValue = searchStackValue;
 	    }
+	}
+	if (Debug.debug) {
+	    double rating = Util.normalize(AVAILABILITY_UNSEEN, maxValue,
+		    searchStack.getCardValue(card));
+	    Debug.printf(Debug.INFO, Card.class, "byAvailability: %s %.2f\n",
+		    CardStack.cardToString(card), rating);
+	    return rating;
 	}
 	return Util.normalize(AVAILABILITY_UNSEEN, maxValue,
 		searchStack.getCardValue(card));
@@ -149,6 +197,12 @@ public class Card {
 	final int cardValue = Card.rateColorOrType(searchStack, card,
 		CardStack.getCardsByColor(CardStack.getCardColor(card)),
 		Card.INFLUENCE_SAME_COLOR);
+	if (Debug.debug) {
+	    double rating = Util.normalize(WORTH_MAX_BY_COLOR, cardValue);
+	    Debug.printf(Debug.INFO, Card.class, "byColor: %s %.2f\n",
+		    CardStack.cardToString(card), rating);
+	    return rating;
+	}
 	return Util.normalize(WORTH_MAX_BY_COLOR, cardValue);
     }
 
@@ -160,6 +214,7 @@ public class Card {
     final Card byColor() {
 	this.pipelineSteps++;
 	this.pipelineRating += Card.byColor(this.searchStack, this.card);
+
 	return this;
     }
 
@@ -192,8 +247,26 @@ public class Card {
 	if (maxValue == 0) {
 	    return 0;
 	}
+
+	if (Debug.debug) {
+	    double rating = Util.normalize(maxValue,
+		    colorIndex[CardStack.getCardColor(card)]);
+	    Debug.printf(Debug.INFO, Card.class, "byColorFrequency: %s %.2f\n",
+		    CardStack.cardToString(card), rating);
+	    return rating;
+	}
 	return Util.normalize(maxValue,
 		colorIndex[CardStack.getCardColor(card)]);
+    }
+
+    public final double byColorFrequency() {
+	byte[] colorIndex = new byte[CardStack.CARDS_MAX_COLOR];
+	byte colorValue;
+	for (byte currentCard : this.colorStack.getCards()) {
+	    colorValue = colorIndex[CardStack.getCardColor(currentCard)];
+	    colorIndex[CardStack.getCardColor(this.card)] = colorValue++;
+	}
+	return Card.byColorFrequency(colorIndex, this.card);
     }
 
     /**
@@ -208,17 +281,26 @@ public class Card {
      *            Card to rate
      * @return Rating
      */
-    static int getNormalizedCardRating(final int card) {
+    public static final int getNormalizedCardRating(final int card) {
 	final int value = Card.getCardRating(card);
+	int rating = 0;
+	// CHECKSTYLE:OFF
 	if (value > 2) {
 	    if (value < 7) {
-		return 3;
+		rating = 3;
 	    } else {
-		return 4;
+		rating = 4;
 	    }
 	} else {
-	    return value;
+	    rating = value;
 	}
+	// CHECKSTYLE:ON
+	if (Debug.debug) {
+	    Debug.printf(Debug.INFO, Card.class,
+		    "getNormalizedCardRating: %s %d\n",
+		    CardStack.cardToString(card), rating);
+	}
+	return rating;
     }
 
     /**
@@ -228,7 +310,7 @@ public class Card {
      *            Card to rate
      * @return Rating
      */
-    static byte getCardRating(final int card) {
+    public static final byte getCardRating(final int card) {
 	byte rating;
 
 	CardStack.validateCardIndex(card);
@@ -236,6 +318,11 @@ public class Card {
 	    rating = (byte) card;
 	} else {
 	    rating = (byte) (card - ((card / CardStack.CARDS_MAX_CARD) * CardStack.CARDS_MAX_CARD));
+	}
+
+	if (Debug.debug) {
+	    Debug.printf(Debug.INFO, Card.class, "getCardRating: %s %d\n",
+		    CardStack.cardToString(card), rating);
 	}
 	return rating;
     }
@@ -274,6 +361,11 @@ public class Card {
 		rating = typeValue;
 	    }
 	}
+
+	if (Debug.debug) {
+	    Debug.printf(Debug.INFO, Card.class, "byGoalDistance: %s %.2f\n",
+		    CardStack.cardToString(card), rating);
+	}
 	return rating;
     }
 
@@ -301,6 +393,14 @@ public class Card {
 	final int cardValue = Card.rateColorOrType(searchStack, card,
 		CardStack.getCardsByType(CardStack.getCardType(card)),
 		INFLUENCE_SAME_TYPE);
+
+	if (Debug.debug) {
+	    double rating = Util.normalize(WORTH_MAX_BY_TYPE, cardValue);
+	    Debug.printf(Debug.INFO, Card.class, "byType: %s %.2f\n",
+		    CardStack.cardToString(card), rating);
+	    return rating;
+	}
+
 	return Util.normalize(WORTH_MAX_BY_TYPE, cardValue);
     }
 
@@ -323,8 +423,20 @@ public class Card {
      * @return Rating
      */
     static double byValue(final int card) {
+	if (Debug.debug) {
+	    double rating = Util.normalize(CardStack.CARDS_MAX_CARD - 1,
+		    Card.getCardRating(card));
+	    Debug.printf(Debug.INFO, Card.class, "byValue: %s %.2f\n",
+		    CardStack.cardToString(card), rating);
+	    return rating;
+	}
+
 	return Util.normalize(CardStack.CARDS_MAX_CARD - 1,
 		Card.getCardRating(card));
+    }
+
+    public void cardSeen(byte card) {
+	this.colorStack.addCard(card);
     }
 
     /**
@@ -349,8 +461,8 @@ public class Card {
      * @param newValue
      *            The new value we try to assign
      */
-    protected void uprate(final CardStack searchStack, final int card,
-	    final int newValue) {
+    public static final void uprate(final CardStack searchStack,
+	    final int card, final int newValue) {
 	final int oldValue = searchStack.getCardValue(card);
 	searchStack.setCardValue(card, (byte) (oldValue > newValue ? oldValue
 		: newValue));
