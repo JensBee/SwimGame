@@ -12,7 +12,8 @@ import swimgame.table.logic.TableLogic;
  * <pre>
  * TODO:
  * 	- handle last round (drop & pick calculation)
- * 	- implement a rating pipeline for different game modes
+ * 	- strategy: if player took lead with n points then drop the cards with 
+ * 	  a probability of 0.5 if possible, just to keep the lead
  * </pre>
  * 
  * @author <a href="mailto:code@jens-bertram.net">Jens Bertram</a>
@@ -29,8 +30,6 @@ public class DefaultPlayer extends AbstractPlayer {
     private byte[] cardsTableTriple = new byte[] {
 	    CardStack.FLAG_UNINITIALIZED, CardStack.FLAG_UNINITIALIZED,
 	    CardStack.FLAG_UNINITIALIZED };
-    /** Tracks, witch colors were dropped during the game. */
-    private final byte[] dropColorIndex = new byte[CardStack.CARDS_MAX_COLOR];
     /** {@link TableLogic} of the game table. */
     private final TableLogic tableLogic;
     /** The name of this {@link IPlayer} instance. */
@@ -41,11 +40,7 @@ public class DefaultPlayer extends AbstractPlayer {
     /** Player behavior configuration. */
     protected final PlayerConfiguration behavior = new PlayerConfiguration();
 
-    /** To be removed! */
-    private static final byte B_RISKYNESS = 3;
-
-    // nested classes
-    /** Nested class for rating cards. */
+    /** rating cards. */
     private Card cardRating = null;
 
     /**
@@ -81,12 +76,11 @@ public class DefaultPlayer extends AbstractPlayer {
 	this.cardStackTable = new CardStack();
 	this.cardStackNeed = new CardStack();
 	this.cardStackTable.fill((byte) Card.AVAILABILITY_UNSEEN);
-	for (int i = 0; i < this.dropColorIndex.length; i++) {
-	    this.dropColorIndex[i] = 0;
-	}
-	// this.gameRound = 0;
+
 	if (this.cardRating != null) {
 	    this.cardRating.reset();
+	} else {
+	    this.cardRating = new Card();
 	}
     }
 
@@ -108,9 +102,9 @@ public class DefaultPlayer extends AbstractPlayer {
 	Debug.println(Debug.TALK, this, "Deciding on my current card set: "
 		+ this.cardStack);
 
-	if (DefaultPlayer.this.cardStack.getValue() < this.behavior
+	if (this.cardStack.getValue() < this.behavior
 		.get(PlayerConfiguration.STACKDROP_INITIAL)) {
-	    // drop immediately if blow threshold
+	    // drop immediately if below threshold
 	    Debug.println(Debug.TALK, this, String.format(
 		    "Dropping (below threshold (%f))",
 		    this.behavior.get(PlayerConfiguration.STACKDROP_INITIAL)));
@@ -125,23 +119,13 @@ public class DefaultPlayer extends AbstractPlayer {
 
     /**
      * Rate our current cards to decide witch we'll probably drop. Results go
-     * into the needed cards array (as negative values) to save some space.
+     * into the needed cards array to save space.
      */
     private void rateCards() {
 	Debug.println(Debug.TALK, this, "Rating my current cards..");
 	for (byte card : this.cardStack.getCards()) {
-	    this.cardRating = new Card();
-	    System.out.println("CARD: " + CardStack.cardToString(card));
 	    this.cardStackNeed.setCardValue(card,
 		    (byte) this.cardRating.getRating(this.cardStack, card));
-	    // if (Debug.debug) {
-	    // Debug.println(
-	    // Debug.TALK,
-	    // this,
-	    // String.format("Rating %-5s: %s",
-	    // CardStack.cardToString(card),
-	    // this.cardRating.dumpRating()));
-	    // }
 	}
     }
 
@@ -256,23 +240,6 @@ public class DefaultPlayer extends AbstractPlayer {
 	for (byte card : this.cardStack.getCards()) {
 	    byte cardValue = this.cardStackNeed.getCardValue(card);
 	    if ((cardValue == -1) || (cardValue < cardToDrop[1])) {
-		// MODEL:risk wait for third card type?
-		if ((CardStack.getCardType(card) == goalDistance[2])
-			&& (goalDistance[3] > 0)) {
-		    if ((B_RISKYNESS >= 2)
-			    && (dropValue < DefaultPlayer.this.behavior
-				    .get(PlayerConfiguration.WAIT_FOR_CARD))) {
-			Debug.println(Debug.INFO, this,
-				"#MODEL:risk Waiting for third card.");
-			continue;
-		    } else if (B_RISKYNESS > 2) {
-			Debug.println(Debug.INFO, this,
-				"#MODEL:risk Waiting for third card, event threshold is good.");
-		    } else {
-			Debug.println(Debug.INFO, this,
-				"#MODEL:risk Skipping wait for third card.");
-		    }
-		}
 		cardToDrop[0] = card;
 		cardToDrop[1] = cardValue;
 	    }
@@ -294,6 +261,8 @@ public class DefaultPlayer extends AbstractPlayer {
 				TableLogic.Action.PICK_CARD,
 				this.cardsTableTriple[0])) {
 		    try {
+			Debug.printf(Debug.INFO, this, "Drop %s Pick %s"
+				+ cardToDrop[0], this.cardsTableTriple[0]);
 			this.cardStack.removeCard(cardToDrop[0]);
 			this.cardStack.addCard(this.cardsTableTriple[0]);
 		    } catch (Exception e) {

@@ -1,10 +1,17 @@
 package swimgame.player.rating;
 
+import java.util.Map;
+import java.util.TreeMap;
+
 import swimgame.Util;
 import swimgame.out.Debug;
 import swimgame.table.CardStack;
 
 /**
+ * Functions for rating card while playing. Most of the functions could be
+ * accessed by static reference. However the Card object allows to build a
+ * chained (or pipelined) rating. Further you're able to set weights for all
+ * possible ratings.
  * 
  * @author <a href="mailto:code@jens-bertram.net">Jens Bertram</a>
  * 
@@ -12,8 +19,12 @@ import swimgame.table.CardStack;
 public class Card {
     // values that should be changeable
     public static final int AVAILABILITY_UNSEEN = -5;
+
     public static final int INFLUENCE_SAME_COLOR = 5;
     public static final int INFLUENCE_SAME_TYPE = 10;
+
+    /** Rating bias configuration. */
+    private final Map<String, Double> bias = new TreeMap<String, Double>();
 
     // fixed values
     /** Maximum value a card rating by type may reach. */
@@ -39,8 +50,46 @@ public class Card {
     /** Steps taken in pipelined processing. */
     private int pipelineSteps = 0;
 
+    /** Allow finer grained and controllable ratings. */
+    public enum Bias {
+	/** TODO: document bias. */
+	AVAILABILITY(0.5),
+	/** */
+	SAME_COLOR(0.5),
+	/** */
+	SAME_TYPE(0.5),
+	/** */
+	VALUE(0.5),
+	/** */
+	GOAL_DISTANCE(0.5);
+
+	private double value;
+
+	Bias(final double newValue) {
+	    this.setValue(newValue);
+	}
+
+	public double getValue() {
+	    return this.value;
+	}
+
+	void setValue(final double newValue) {
+	    this.value = newValue;
+	}
+    }
+
     public Card() {
 	this.reset();
+    }
+
+    public void setBias(final Map<Bias, Double> biasMap) {
+	for (Bias bias : biasMap.keySet()) {
+	    bias.setValue(biasMap.get(bias));
+	}
+    }
+
+    public void setBias(final Bias bias, final double value) {
+	bias.setValue(value);
     }
 
     /**
@@ -62,7 +111,7 @@ public class Card {
      * @return Card
      */
     public final Card pipeline(final CardStack newSearchStack, final int newCard) {
-	this.resetRating();
+	this.resetPipeline();
 	// init pipe variables
 	this.searchStack = newSearchStack;
 	this.card = newCard;
@@ -70,15 +119,15 @@ public class Card {
 	return this;
     }
 
-    private void resetRating() {
+    private void resetPipeline() {
 	// reset previous ratings
 	this.pipelineSteps = 0;
 	this.pipelineRating = 0;
-	this.colorStack = new CardStack();
     }
 
     public void reset() {
-	this.resetRating();
+	this.resetPipeline();
+	this.colorStack = new CardStack();
 	this.searchStack = new CardStack();
 	this.card = 0;
     }
@@ -100,18 +149,27 @@ public class Card {
 	}
 	if (Debug.debug) {
 	    double rating = this.pipelineRating / this.pipelineSteps;
-	    Debug.printf(Debug.INFO, Card.class, "getRating: %s %.2f\n",
-		    CardStack.cardToString(this.card), rating);
+	    Debug.printf(Debug.INFO, Card.class,
+		    "getRating: %s: (%.2f/%d) = %.2f\n",
+		    CardStack.cardToString(this.card), this.pipelineRating,
+		    this.pipelineSteps, rating);
 	    return rating;
 	}
 	return this.pipelineRating / this.pipelineSteps;
     }
 
     public final double getRating(final CardStack newSearchStack, final int card) {
-	Debug.printf(Debug.INFO, Card.class, "getRating: %s\n",
+	Debug.printf(Debug.INFO, Card.class, "getRating: %s>>>\n",
 		CardStack.cardToString(card));
+	this.resetPipeline();
 	this.searchStack = newSearchStack;
 	this.card = card;
+	if (Debug.debug) {
+	    double rating = this.getRating();
+	    Debug.printf(Debug.INFO, Card.class, "getRating: <<<%s\n",
+		    CardStack.cardToString(card));
+	    return rating;
+	}
 	return this.getRating();
     }
 
@@ -152,7 +210,14 @@ public class Card {
      */
     final Card byAvailability() {
 	this.pipelineSteps++;
-	this.pipelineRating += Card.byAvailability(this.searchStack, this.card);
+	double rating = (Card.byAvailability(this.searchStack, this.card) * Bias.AVAILABILITY
+		.getValue());
+	this.pipelineRating += rating;
+	if (Debug.debug) {
+	    Debug.printf(Debug.INFO, Card.class,
+		    "byAvailability (bias): %s %.2f\n",
+		    CardStack.cardToString(this.card), rating);
+	}
 	return this;
     }
 
@@ -193,7 +258,7 @@ public class Card {
      *            Card to rate
      * @return Rating
      */
-    static double byColor(final CardStack searchStack, final int card) {
+    static double bySameColor(final CardStack searchStack, final int card) {
 	final int cardValue = Card.rateColorOrType(searchStack, card,
 		CardStack.getCardsByColor(CardStack.getCardColor(card)),
 		Card.INFLUENCE_SAME_COLOR);
@@ -207,14 +272,19 @@ public class Card {
     }
 
     /**
-     * Pipelined version of {@link Card#byColor(CardStack, int)}
+     * Pipelined version of {@link Card#bySameColor(CardStack, int)}
      * 
      * @return Card
      */
     final Card byColor() {
 	this.pipelineSteps++;
-	this.pipelineRating += Card.byColor(this.searchStack, this.card);
-
+	double rating = (Card.bySameColor(this.searchStack, this.card) * Bias.SAME_COLOR
+		.getValue());
+	this.pipelineRating += rating;
+	if (Debug.debug) {
+	    Debug.printf(Debug.INFO, Card.class, "byColor (bias): %s %.2f\n",
+		    CardStack.cardToString(this.card), rating);
+	}
 	return this;
     }
 
@@ -259,14 +329,23 @@ public class Card {
 		colorIndex[CardStack.getCardColor(card)]);
     }
 
-    public final double byColorFrequency() {
+    public final Card byColorFrequency() {
+	this.pipelineSteps++;
 	byte[] colorIndex = new byte[CardStack.CARDS_MAX_COLOR];
 	byte colorValue;
 	for (byte currentCard : this.colorStack.getCards()) {
 	    colorValue = colorIndex[CardStack.getCardColor(currentCard)];
 	    colorIndex[CardStack.getCardColor(this.card)] = colorValue++;
 	}
-	return Card.byColorFrequency(colorIndex, this.card);
+	double rating = (Card.byColorFrequency(colorIndex, this.card) * Bias.SAME_COLOR
+		.getValue());
+	this.pipelineRating += rating;
+	if (Debug.debug) {
+	    Debug.printf(Debug.INFO, Card.class,
+		    "byColorFrequency (bias): %s %.2f\n",
+		    CardStack.cardToString(this.card), rating);
+	}
+	return this;
     }
 
     /**
@@ -320,10 +399,10 @@ public class Card {
 	    rating = (byte) (card - ((card / CardStack.CARDS_MAX_CARD) * CardStack.CARDS_MAX_CARD));
 	}
 
-	if (Debug.debug) {
-	    Debug.printf(Debug.INFO, Card.class, "getCardRating: %s %d\n",
-		    CardStack.cardToString(card), rating);
-	}
+	// if (Debug.debug) {
+	// Debug.printf(Debug.INFO, Card.class, "getCardRating: %s %d\n",
+	// CardStack.cardToString(card), rating);
+	// }
 	return rating;
     }
 
@@ -376,7 +455,14 @@ public class Card {
      */
     final Card byGoalDistance() {
 	this.pipelineSteps++;
-	this.pipelineRating += Card.byGoalDistance(this.searchStack, this.card);
+	double rating = (Card.byGoalDistance(this.searchStack, this.card) * Bias.GOAL_DISTANCE
+		.getValue());
+	this.pipelineRating += rating;
+	if (Debug.debug) {
+	    Debug.printf(Debug.INFO, Card.class,
+		    "byGoalDistance (bias): %s %.2f\n",
+		    CardStack.cardToString(this.card), rating);
+	}
 	return this;
     }
 
@@ -389,7 +475,7 @@ public class Card {
      *            Card to check
      * @return Rating
      */
-    static double byType(final CardStack searchStack, final int card) {
+    static double bySameType(final CardStack searchStack, final int card) {
 	final int cardValue = Card.rateColorOrType(searchStack, card,
 		CardStack.getCardsByType(CardStack.getCardType(card)),
 		INFLUENCE_SAME_TYPE);
@@ -405,13 +491,19 @@ public class Card {
     }
 
     /**
-     * Pipelined version of {@link Card#byType(CardStack, int)}.
+     * Pipelined version of {@link Card#bySameType(CardStack, int)}.
      * 
      * @return Card
      */
     final Card byType() {
 	this.pipelineSteps++;
-	this.pipelineRating += Card.byType(this.searchStack, this.card);
+	double rating = (Card.bySameType(this.searchStack, this.card) * Bias.SAME_TYPE
+		.getValue());
+	this.pipelineRating += rating;
+	if (Debug.debug) {
+	    Debug.printf(Debug.INFO, Card.class, "byType (bias): %s %.2f\n",
+		    CardStack.cardToString(this.card), rating);
+	}
 	return this;
     }
 
@@ -446,7 +538,12 @@ public class Card {
      */
     final Card byValue() {
 	this.pipelineSteps++;
-	this.pipelineRating += Card.byValue(this.card);
+	double rating = (Card.byValue(this.card) * Bias.VALUE.getValue());
+	this.pipelineRating += rating;
+	if (Debug.debug) {
+	    Debug.printf(Debug.INFO, Card.class, "byValue (bias): %s %.2f\n",
+		    CardStack.cardToString(this.card), rating);
+	}
 	return this;
     }
 
