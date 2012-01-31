@@ -4,11 +4,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import swimgame.Util;
 import swimgame.out.Console;
 import swimgame.out.Debug;
 import swimgame.table.CardStack;
 import swimgame.table.logic.TableLogic;
+import swimgame.util.Util;
 
 /**
  * A player playing the game. This abstract class handles the basic player

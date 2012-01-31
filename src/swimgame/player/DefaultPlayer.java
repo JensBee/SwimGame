@@ -1,5 +1,8 @@
 package swimgame.player;
 
+import java.util.Arrays;
+import java.util.Map;
+
 import swimgame.out.Debug;
 import swimgame.player.rating.Card;
 import swimgame.player.rating.Stack;
@@ -14,6 +17,7 @@ import swimgame.table.logic.TableLogic;
  * 	- handle last round (drop & pick calculation)
  * 	- strategy: if player took lead with n points then drop the cards with 
  * 	  a probability of 0.5 if possible, just to keep the lead
+ * 	- make use of modified biases
  * </pre>
  * 
  * @author <a href="mailto:code@jens-bertram.net">Jens Bertram</a>
@@ -36,9 +40,78 @@ public class DefaultPlayer extends AbstractPlayer {
     private final String name;
     /** Game close called? */
     private boolean gameIsClosed = false;
+    /** Store modified {@link Bias} settings */
+    private final double[] bias = new double[Bias.values().length];
+    /** Default value for an uninitialized bias setting. */
+    private final int BIAS_UNSET = -1;
 
-    /** Player behavior configuration. */
-    protected final PlayerConfiguration behavior = new PlayerConfiguration();
+    /**
+     * Player behavior bias. These are the possible biases to set with their
+     * default values. Modifying these values is possible by using
+     * {@link DefaultPlayer#setBias(Bias, int)} or
+     * {@link DefaultPlayer#setBias(Map)}
+     */
+    public enum Bias {
+	/** TODO: document bias values. */
+	STACKDROP_INITIAL(20),
+	/** */
+	STACKDROP(20),
+	/** */
+	FORCE_DROP(20),
+	/** */
+	WAIT_FOR_CARD(21);
+
+	/** Current value for this {@link Bias} instance. */
+	private double value;
+
+	/**
+	 * Constructor.
+	 * 
+	 * @param newValue
+	 *            New value for this {@link Bias} instance
+	 */
+	Bias(final double newValue) {
+	    this.value = newValue;
+	}
+
+	/**
+	 * Get the value of this {@link Bias} instance.
+	 * 
+	 * @return Current value for this {@link Bias} instance
+	 */
+	public final double getValue() {
+	    return this.value;
+	}
+    }
+
+    /**
+     * Set player bias values.
+     * 
+     * @param biasMap
+     *            Map with {@link Bias} as key and a {@link Double} as value.
+     *            The double must be in the range 0-1.
+     */
+    public final void setBias(final Map<Bias, Double> biasMap) {
+	for (Bias biasName : biasMap.keySet()) {
+	    this.setBias(biasName, biasMap.get(biasName));
+	}
+    }
+
+    /**
+     * Set a single player bias value.
+     * 
+     * @param biasName
+     *            The bias to modify
+     * @param value
+     *            The new value to set
+     */
+    public final void setBias(final Bias biasName, final double value) {
+	if ((value < 0) || (value > CardStack.STACKVALUE_MAX)) {
+	    throw new IllegalArgumentException(String.format(
+		    "Bias value %f not in the range 0-1.", value));
+	}
+	this.bias[biasName.ordinal()] = value;
+    }
 
     /** rating cards. */
     private Card cardRating = null;
@@ -73,6 +146,9 @@ public class DefaultPlayer extends AbstractPlayer {
     }
 
     private void initialize() {
+	// set the configurable bias values as uninitialized
+	Arrays.fill(this.bias, this.BIAS_UNSET);
+	// init game variables
 	this.cardStackTable = new CardStack();
 	this.cardStackNeed = new CardStack();
 	this.cardStackTable.fill((byte) Card.AVAILABILITY_UNSEEN);
@@ -96,18 +172,19 @@ public class DefaultPlayer extends AbstractPlayer {
 
     /**
      * Decide (if able to), if our initial card set is good enough.
+     * 
+     * @return True if player wants to keep his cards
      */
     @Override
     public final boolean keepCardSet() {
 	Debug.println(Debug.TALK, this, "Deciding on my current card set: "
 		+ this.cardStack);
 
-	if (this.cardStack.getValue() < this.behavior
-		.get(PlayerConfiguration.STACKDROP_INITIAL)) {
+	if (this.cardStack.getValue() < Bias.STACKDROP_INITIAL.getValue()) {
 	    // drop immediately if below threshold
 	    Debug.println(Debug.TALK, this, String.format(
 		    "Dropping (below threshold (%f))",
-		    this.behavior.get(PlayerConfiguration.STACKDROP_INITIAL)));
+		    Bias.STACKDROP_INITIAL.getValue()));
 
 	    this.log("Uhm... no!");
 	    return false;

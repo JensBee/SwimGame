@@ -1,11 +1,11 @@
 package swimgame.player.rating;
 
+import java.util.Arrays;
 import java.util.Map;
-import java.util.TreeMap;
 
-import swimgame.Util;
 import swimgame.out.Debug;
 import swimgame.table.CardStack;
+import swimgame.util.Util;
 
 /**
  * Functions for rating card while playing. Most of the functions could be
@@ -23,17 +23,14 @@ public class Card {
     public static final int INFLUENCE_SAME_COLOR = 5;
     public static final int INFLUENCE_SAME_TYPE = 10;
 
-    /** Rating bias configuration. */
-    private final Map<String, Double> bias = new TreeMap<String, Double>();
-
     // fixed values
     /** Maximum value a card rating by type may reach. */
-    protected final static int WORTH_MAX_BY_TYPE = (2 * INFLUENCE_SAME_TYPE)
+    protected static final int WORTH_MAX_BY_TYPE = (2 * INFLUENCE_SAME_TYPE)
 	    + Card.getNormalizedCardRating(CardStack.STACK_SIZE - 1)
 	    + Card.getNormalizedCardRating(CardStack.STACK_SIZE - 2)
 	    + Card.getNormalizedCardRating(CardStack.STACK_SIZE - 3);
     /** Maximum value a card rating by color may reach. */
-    private final static int WORTH_MAX_BY_COLOR = (2 * Card.INFLUENCE_SAME_COLOR)
+    private static final int WORTH_MAX_BY_COLOR = (2 * Card.INFLUENCE_SAME_COLOR)
 	    + Card.getNormalizedCardRating(CardStack.STACK_SIZE - 1)
 	    + Card.getNormalizedCardRating(CardStack.STACK_SIZE - 2)
 	    + Card.getNormalizedCardRating(CardStack.STACK_SIZE - 3);
@@ -49,8 +46,17 @@ public class Card {
     private double pipelineRating = 0;
     /** Steps taken in pipelined processing. */
     private int pipelineSteps = 0;
+    /** Store modified {@link Bias} settings */
+    private final double[] bias = new double[Bias.values().length];
+    /** Default value for an uninitialized bias setting. */
+    private final int BIAS_UNSET = -1;
 
-    /** Allow finer grained and controllable ratings. */
+    /**
+     * Allow finer grained and controllable ratings. These are the possible
+     * biases to set with their default values. Modifying these values is
+     * possible by using {@link Card#setBiasValue(Bias, int)} or
+     * {@link Card#setBiasValue(Map)}
+     * */
     public enum Bias {
 	/** TODO: document bias. */
 	AVAILABILITY(0.5),
@@ -63,33 +69,70 @@ public class Card {
 	/** */
 	GOAL_DISTANCE(0.5);
 
+	/** Current value for this {@link Bias} instance. */
 	private double value;
 
+	/**
+	 * Constructor.
+	 * 
+	 * @param newValue
+	 *            New value for this {@link Bias} instance
+	 */
 	Bias(final double newValue) {
-	    this.setValue(newValue);
-	}
-
-	public double getValue() {
-	    return this.value;
-	}
-
-	void setValue(final double newValue) {
 	    this.value = newValue;
+	}
+
+	/**
+	 * Get the value of this {@link Bias} instance.
+	 * 
+	 * @return Current value for this {@link Bias} instance
+	 */
+	public final double getValue() {
+	    return this.value;
 	}
     }
 
+    /** Empty constructor. */
     public Card() {
+	Arrays.fill(this.bias, this.BIAS_UNSET);
 	this.reset();
     }
 
-    public void setBias(final Map<Bias, Double> biasMap) {
+    /**
+     * Set bias values for biased rating.
+     * 
+     * @param biasMap
+     *            Map with {@link Bias} as key and a {@link Double} as value.
+     *            The double must be in the range 0-1.
+     */
+    public final void setBiasValue(final Map<Bias, Double> biasMap) {
 	for (Bias bias : biasMap.keySet()) {
-	    bias.setValue(biasMap.get(bias));
+	    this.setBiasValue(bias, biasMap.get(bias));
 	}
     }
 
-    public void setBias(final Bias bias, final double value) {
-	bias.setValue(value);
+    /**
+     * Set a single bias value.
+     * 
+     * @param biasName
+     *            The bias to modify
+     * @param value
+     *            The new value to set
+     */
+    public final void setBiasValue(final Bias biasName, final double value) {
+	if ((value < 0) || (value > 1)) {
+	    throw new IllegalArgumentException(String.format(
+		    "Bias value %f not in the range 0-1.", value));
+	}
+	this.bias[biasName.ordinal()] = value;
+    }
+
+    public final double getBiasValue(final Bias biasName) {
+	double biasValue = this.bias[biasName.ordinal()];
+	if (biasValue != -1) {
+	    return biasValue;
+	}
+	return biasName.getValue();
     }
 
     /**
@@ -111,21 +154,27 @@ public class Card {
      * @return Card
      */
     public final Card pipeline(final CardStack newSearchStack, final int newCard) {
-	this.resetPipeline();
-	// init pipe variables
+	this.reset();
 	this.searchStack = newSearchStack;
 	this.card = newCard;
-	// ready to run
 	return this;
     }
 
+    /**
+     * Reset the rating of the pipeline. This is normally used between two
+     * ratings in a single game.
+     */
     private void resetPipeline() {
 	// reset previous ratings
 	this.pipelineSteps = 0;
 	this.pipelineRating = 0;
     }
 
-    public void reset() {
+    /**
+     * Reset the whole pipeline. This is normally used before running a new
+     * game.
+     */
+    public final void reset() {
 	this.resetPipeline();
 	this.colorStack = new CardStack();
 	this.searchStack = new CardStack();
@@ -133,7 +182,10 @@ public class Card {
     }
 
     /**
-     * Get the overall rating for a pipelined processing.
+     * Get the overall rating for a pipelined processing. This function will
+     * return the result of the last pipeline run. If there are no results of a
+     * previous run it will run the default set of piped ratings and return its
+     * results.
      * 
      * @return Overall rating of all pipelined ratings
      */
@@ -210,8 +262,8 @@ public class Card {
      */
     final Card byAvailability() {
 	this.pipelineSteps++;
-	double rating = (Card.byAvailability(this.searchStack, this.card) * Bias.AVAILABILITY
-		.getValue());
+	double rating = (Card.byAvailability(this.searchStack, this.card) * this
+		.getBiasValue(Bias.AVAILABILITY));
 	this.pipelineRating += rating;
 	if (Debug.debug) {
 	    Debug.printf(Debug.INFO, Card.class,
@@ -272,14 +324,14 @@ public class Card {
     }
 
     /**
-     * Pipelined version of {@link Card#bySameColor(CardStack, int)}
+     * Pipelined version of {@link Card#bySameColor(CardStack, int)}.
      * 
      * @return Card
      */
     final Card byColor() {
 	this.pipelineSteps++;
-	double rating = (Card.bySameColor(this.searchStack, this.card) * Bias.SAME_COLOR
-		.getValue());
+	double rating = (Card.bySameColor(this.searchStack, this.card) * this
+		.getBiasValue(Bias.SAME_COLOR));
 	this.pipelineRating += rating;
 	if (Debug.debug) {
 	    Debug.printf(Debug.INFO, Card.class, "byColor (bias): %s %.2f\n",
@@ -337,8 +389,8 @@ public class Card {
 	    colorValue = colorIndex[CardStack.getCardColor(currentCard)];
 	    colorIndex[CardStack.getCardColor(this.card)] = colorValue++;
 	}
-	double rating = (Card.byColorFrequency(colorIndex, this.card) * Bias.SAME_COLOR
-		.getValue());
+	double rating = (Card.byColorFrequency(colorIndex, this.card) * this
+		.getBiasValue(Bias.SAME_COLOR));
 	this.pipelineRating += rating;
 	if (Debug.debug) {
 	    Debug.printf(Debug.INFO, Card.class,
@@ -455,8 +507,8 @@ public class Card {
      */
     final Card byGoalDistance() {
 	this.pipelineSteps++;
-	double rating = (Card.byGoalDistance(this.searchStack, this.card) * Bias.GOAL_DISTANCE
-		.getValue());
+	double rating = (Card.byGoalDistance(this.searchStack, this.card) * this
+		.getBiasValue(Bias.GOAL_DISTANCE));
 	this.pipelineRating += rating;
 	if (Debug.debug) {
 	    Debug.printf(Debug.INFO, Card.class,
@@ -497,8 +549,8 @@ public class Card {
      */
     final Card byType() {
 	this.pipelineSteps++;
-	double rating = (Card.bySameType(this.searchStack, this.card) * Bias.SAME_TYPE
-		.getValue());
+	double rating = (Card.bySameType(this.searchStack, this.card) * this
+		.getBiasValue(Bias.SAME_TYPE));
 	this.pipelineRating += rating;
 	if (Debug.debug) {
 	    Debug.printf(Debug.INFO, Card.class, "byType (bias): %s %.2f\n",
@@ -538,7 +590,8 @@ public class Card {
      */
     final Card byValue() {
 	this.pipelineSteps++;
-	double rating = (Card.byValue(this.card) * Bias.VALUE.getValue());
+	double rating = (Card.byValue(this.card) * this
+		.getBiasValue(Bias.VALUE));
 	this.pipelineRating += rating;
 	if (Debug.debug) {
 	    Debug.printf(Debug.INFO, Card.class, "byValue (bias): %s %.2f\n",

@@ -15,7 +15,7 @@ public class BehaviorTest {
     private static final int NUMBER_OF_ROUNDS = 40;
     /** How many games to play? */
     private static final int NUMBER_OF_GAMES = 10;
-    /** How many turns to play? A turn is anumber of games that will be played. */
+    /** How many turns to play? A turn is a number of games that will be played. */
     private static final int NUMBER_OF_TURNS = 10;
 
     /**
@@ -39,7 +39,7 @@ public class BehaviorTest {
 	MutablePlayer mutablePlayer = new MutablePlayer(table.getLogic(),
 		"Mutable");
 	// init the test-player with a random gene
-	mutablePlayer.setGene(genePool.getRandomGene());
+	mutablePlayer.setBias(genePool.getRandomGene().getBias());
 
 	// add out test-player
 	table.addPlayer(mutablePlayer);

@@ -3,8 +3,8 @@ package swimgame.table;
 import java.util.Arrays;
 import java.util.Iterator;
 
-import swimgame.Util;
 import swimgame.table.logic.TableLogic;
+import swimgame.util.Util;
 
 /**
  * A card stack as part of the game. This is initially the full set of cards

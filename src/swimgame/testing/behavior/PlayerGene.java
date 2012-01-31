@@ -2,9 +2,11 @@ package swimgame.testing.behavior;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
-import swimgame.Util;
-import swimgame.player.PlayerConfiguration;
+import swimgame.player.DefaultPlayer;
+import swimgame.util.Util;
 
 /**
  * Gene for a player.
@@ -12,7 +14,7 @@ import swimgame.player.PlayerConfiguration;
  * @author <a href="mailto:code@jens-bertram.net">Jens Bertram</a>
  * 
  */
-public class PlayerGene extends PlayerConfiguration {
+public class PlayerGene {
     /** Stores all possible values a card-set rating may archive */
     private static final ArrayList<Double> CARD_RATING_VALUES = new ArrayList<Double>(
 	    Arrays.asList(//
@@ -23,10 +25,12 @@ public class PlayerGene extends PlayerConfiguration {
 		    new Double(30), // 9,10,11
 		    new Double(30.5), // three of a type
 		    new Double(31))); // 10,10,11
+    /** Storage for generated bias values. */
+    private final Map<DefaultPlayer.Bias, Double> gene = new HashMap<DefaultPlayer.Bias, Double>(
+	    DefaultPlayer.Bias.values().length);
 
     /** Empty Constructor. This will create a new random gene. */
     PlayerGene() {
-	super();
 	this.createRandomGene();
     }
 
@@ -49,22 +53,18 @@ public class PlayerGene extends PlayerConfiguration {
     private void createRandomGene() {
 	// card set rating dependent values
 	final int maxValue = CARD_RATING_VALUES.size() - 1;
-	this.gene[PlayerConfiguration.STACKDROP_INITIAL] = CARD_RATING_VALUES
-		.get(Util.getRandomInt(maxValue));
-	this.gene[PlayerConfiguration.STACKDROP] = CARD_RATING_VALUES.get(Util
-		.getRandomInt(maxValue));
-	this.gene[PlayerConfiguration.FORCE_DROP] = CARD_RATING_VALUES.get(Util
-		.getRandomInt(maxValue));
-	this.gene[PlayerConfiguration.WAIT_FOR_CARD] = CARD_RATING_VALUES
-		.get(Util.getRandomInt(maxValue));
+
+	for (DefaultPlayer.Bias bias : DefaultPlayer.Bias.values()) {
+	    this.gene.put(bias,
+		    CARD_RATING_VALUES.get(Util.getRandomInt(maxValue)));
+	}
     }
 
     @Override
     public String toString() {
 	StringBuffer out = new StringBuffer();
-	for (int i = 0; i < this.gene.length; i++) {
-	    out.append(String.format("\t%s: %.1f\n",
-		    PlayerConfiguration.GENE_NAMES[i], this.gene[i]));
+	for (DefaultPlayer.Bias bias : this.gene.keySet()) {
+	    out.append(String.format("\t%s: %.1f\n", bias, this.gene.get(bias)));
 	}
 	return out.toString();
     }
@@ -74,7 +74,7 @@ public class PlayerGene extends PlayerConfiguration {
      * 
      * @return The gene Array
      */
-    public double[] getGene() {
-	return super.asArray();
+    public Map<DefaultPlayer.Bias, Double> getBias() {
+	return this.gene;
     }
 }

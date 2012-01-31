@@ -1,4 +1,4 @@
-package swimgame;
+package swimgame.util;
 
 public class Util {
     /**
