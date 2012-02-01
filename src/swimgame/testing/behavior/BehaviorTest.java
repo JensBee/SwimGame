@@ -39,13 +39,15 @@ public class BehaviorTest {
 	MutablePlayer mutablePlayer = new MutablePlayer(table.getLogic(),
 		"Mutable");
 	// init the test-player with a random gene
-	mutablePlayer.setBias(genePool.getRandomGene().getBias());
+	mutablePlayer.setBias(genePool.getRandomGene().getPlayerBias());
+	mutablePlayer.setCardBiasValue(genePool.getRandomGene()
+		.getPlayerCardBias());
 
 	// add out test-player
 	table.addPlayer(mutablePlayer);
 	// add three opponents
-	table.addPlayer(new MutablePlayer(table.getLogic()));
-	table.addPlayer(new MutablePlayer(table.getLogic()));
+	// table.addPlayer(new MutablePlayer(table.getLogic()));
+	// table.addPlayer(new MutablePlayer(table.getLogic()));
 	table.addPlayer(new MutablePlayer(table.getLogic()));
 
 	// set game

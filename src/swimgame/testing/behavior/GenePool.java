@@ -26,7 +26,7 @@ public class GenePool {
      */
     GenePool(final int size) {
 	Debug.printf(Debug.INFO, this.getClass(),
-		"Initializing pool with %d genes.. ", size);
+		"Initializing pool with %d genes..\n", size);
 	this.genePool = new HashMap<PlayerGene, Integer>(size);
 	this.initializePool(size);
 	Debug.printf(Debug.INFO, this.getClass(),

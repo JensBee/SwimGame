@@ -30,6 +30,8 @@ public class DefaultPlayer extends AbstractPlayer {
     private CardStack cardStackNeed;
     /** Cards stack owned by this player. */
     private CardStack cardStack;
+    /** rating cards. */
+    private Card cardRating;
     /** Cards on the table to decide on (if it's our turn). */
     private byte[] cardsTableTriple = new byte[] {
 	    CardStack.FLAG_UNINITIALIZED, CardStack.FLAG_UNINITIALIZED,
@@ -40,10 +42,10 @@ public class DefaultPlayer extends AbstractPlayer {
     private final String name;
     /** Game close called? */
     private boolean gameIsClosed = false;
-    /** Store modified {@link Bias} settings */
+    /** Store modified {@link Bias} settings. */
     private final double[] bias = new double[Bias.values().length];
     /** Default value for an uninitialized bias setting. */
-    private final int BIAS_UNSET = -1;
+    private static final int BIAS_UNSET = -1;
 
     /**
      * Player behavior bias. These are the possible biases to set with their
@@ -93,7 +95,7 @@ public class DefaultPlayer extends AbstractPlayer {
      */
     public final void setBias(final Map<Bias, Double> biasMap) {
 	for (Bias biasName : biasMap.keySet()) {
-	    this.setBias(biasName, biasMap.get(biasName));
+	    this.setBiasValue(biasName, biasMap.get(biasName));
 	}
     }
 
@@ -105,7 +107,7 @@ public class DefaultPlayer extends AbstractPlayer {
      * @param value
      *            The new value to set
      */
-    public final void setBias(final Bias biasName, final double value) {
+    public final void setBiasValue(final Bias biasName, final double value) {
 	if ((value < 0) || (value > CardStack.STACKVALUE_MAX)) {
 	    throw new IllegalArgumentException(String.format(
 		    "Bias value %f not in the range 0-1.", value));
@@ -113,8 +115,21 @@ public class DefaultPlayer extends AbstractPlayer {
 	this.bias[biasName.ordinal()] = value;
     }
 
-    /** rating cards. */
-    private Card cardRating = null;
+    public void setCardBiasValue(final Map<Card.Bias, Double> biasMap) {
+	this.cardRating.setBiasValue(biasMap);
+    }
+
+    public void setCardBiasValue(final Card.Bias biasName, final double value) {
+	this.cardRating.setBiasValue(biasName, value);
+    }
+
+    public final double getBiasValue(final Bias biasName) {
+	double biasValue = this.bias[biasName.ordinal()];
+	if (biasValue != -1) {
+	    return biasValue;
+	}
+	return biasName.getValue();
+    }
 
     /**
      * Default constructor.
@@ -125,6 +140,7 @@ public class DefaultPlayer extends AbstractPlayer {
     public DefaultPlayer(final TableLogic newTableLogic) {
 	this.name = this.getRandomName();
 	this.tableLogic = newTableLogic;
+	this.initialize();
     }
 
     /**
@@ -138,6 +154,7 @@ public class DefaultPlayer extends AbstractPlayer {
     public DefaultPlayer(final TableLogic newTableLogic, final String playerName) {
 	this.tableLogic = newTableLogic;
 	this.name = playerName;
+	this.initialize();
     }
 
     @Override
@@ -147,11 +164,11 @@ public class DefaultPlayer extends AbstractPlayer {
 
     private void initialize() {
 	// set the configurable bias values as uninitialized
-	Arrays.fill(this.bias, this.BIAS_UNSET);
+	Arrays.fill(this.bias, DefaultPlayer.BIAS_UNSET);
 	// init game variables
 	this.cardStackTable = new CardStack();
 	this.cardStackNeed = new CardStack();
-	this.cardStackTable.fill((byte) Card.AVAILABILITY_UNSEEN);
+	this.cardStackTable.fill((byte) Card.Rate.AVAILABILITY_UNSEEN);
 
 	if (this.cardRating != null) {
 	    this.cardRating.reset();
@@ -163,7 +180,7 @@ public class DefaultPlayer extends AbstractPlayer {
     @Override
     public final void setCards(final byte[] cards) {
 	super.setCards(cards);
-	this.cardRating = new Card();
+	this.cardRating.reset();
 	// store our own cards as being in the game
 	for (byte card : cards) {
 	    this.cardRating.cardSeen(card);
@@ -180,7 +197,8 @@ public class DefaultPlayer extends AbstractPlayer {
 	Debug.println(Debug.TALK, this, "Deciding on my current card set: "
 		+ this.cardStack);
 
-	if (this.cardStack.getValue() < Bias.STACKDROP_INITIAL.getValue()) {
+	if (this.cardStack.getValue() < this
+		.getBiasValue(Bias.STACKDROP_INITIAL)) {
 	    // drop immediately if below threshold
 	    Debug.println(Debug.TALK, this, String.format(
 		    "Dropping (below threshold (%f))",
