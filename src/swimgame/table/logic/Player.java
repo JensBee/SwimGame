@@ -8,7 +8,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import swimgame.player.IPlayer;
+import cardGame.player.IPlayer;
+
 import swimgame.table.logic.TableLogic.Event;
 
 /**

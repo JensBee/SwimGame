@@ -3,8 +3,9 @@ package swimgame.testing.behavior;
 import java.util.HashMap;
 import java.util.Map;
 
+import cardGame.util.Util;
+
 import swimgame.out.Debug;
-import swimgame.util.Util;
 
 /**
  * Manages the genes used to create new players. This also handles the rating of

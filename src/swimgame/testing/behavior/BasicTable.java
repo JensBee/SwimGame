@@ -3,7 +3,9 @@ package swimgame.testing.behavior;
 import java.util.HashMap;
 import java.util.Map;
 
-import swimgame.player.IPlayer;
+import cardGame.CardDeck;
+import cardGame.player.IPlayer;
+
 import swimgame.table.CardStack;
 import swimgame.table.DefaultTableController;
 import swimgame.table.logic.TableLogic;
@@ -16,7 +18,8 @@ import swimgame.table.logic.TableLogic;
  */
 class BasicTable extends DefaultTableController {
     /** Holds a list with genes and their won games. */
-    private final Map<Integer, PlayerGene> winList = new HashMap<Integer, PlayerGene>();
+    private final Map<Integer, PlayerGene> winList =
+	    new HashMap<Integer, PlayerGene>();
     /** The {@link TableLogic} to be controlled by this instance. */
     private final TableLogic tableLogic;
 
@@ -45,7 +48,7 @@ class BasicTable extends DefaultTableController {
 
 	System.out.println("Player game-rating:");
 	for (IPlayer player : this.tableLogic.getTable().getPlayer().asList()) {
-	    final byte[] playerCards = player.getCards();
+	    final CardDeck.Card[] playerCards = player.getCards();
 
 	    if (rank == 1) {
 		// player.hasWon();
@@ -54,9 +57,12 @@ class BasicTable extends DefaultTableController {
 	    if (playerCards == null) {
 		// TODO: error out!
 	    } else {
+		StringBuffer cardString = new StringBuffer();
+		for (CardDeck.Card card : playerCards) {
+		    cardString.append(card.toString());
+		}
 		System.out.printf(" %s's cards: %s value: %.0f\n", player,
-			CardStack.cardsToString(playerCards),
-			CardStack.calculateValue(playerCards));
+			cardString, CardStack.calculateValue(playerCards));
 	    }
 	}
     }

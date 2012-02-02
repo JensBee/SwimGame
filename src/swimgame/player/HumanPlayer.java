@@ -4,6 +4,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
+import cardGame.CardDeck;
+
 import swimgame.out.Console;
 import swimgame.table.CardStack;
 import swimgame.table.logic.TableLogic;
@@ -37,7 +39,8 @@ public class HumanPlayer extends AbstractPlayer {
      * @return The key pressed
      */
     private char getKey(final String message) {
-	BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+	BufferedReader br =
+		new BufferedReader(new InputStreamReader(System.in));
 	Console.println("> " + message);
 	try {
 	    return (char) br.read();
@@ -61,8 +64,8 @@ public class HumanPlayer extends AbstractPlayer {
     private int getDropCard() {
 	boolean input = false;
 	while (!input) {
-	    char key = this
-		    .getKey("Press (1-3) to drop a card, [c] to close, [s] to skip..");
+	    char key =
+		    this.getKey("Press (1-3) to drop a card, [c] to close, [s] to skip..");
 	    switch (key) {
 	    case 'c':
 		if (this.tableLogic.interact(TableLogic.Action.END_CALL,
@@ -117,7 +120,7 @@ public class HumanPlayer extends AbstractPlayer {
     }
 
     @Override
-    public final void doMove(final byte[] tableCards) {
+    public final void doMove(final CardDeck.Card[] tableCards) {
 	String cardsFormatString = "%5s %9s";
 
 	if (this.gameIsClosed) {

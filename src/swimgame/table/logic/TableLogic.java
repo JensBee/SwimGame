@@ -1,8 +1,9 @@
 package swimgame.table.logic;
 
+import cardGame.CardDeck;
+import cardGame.table.ITableController;
 import swimgame.out.Debug;
 import swimgame.table.CardStack;
-import swimgame.table.ITableController;
 
 /**
  * Handles all the stuff thats needed to get the game running. Parts of the game
@@ -130,7 +131,7 @@ public class TableLogic {
      *            The cards, for witch the goal state should be verified
      * @return True if in goal state (cards might be dropped)
      */
-    static boolean verifyGoal(final byte[] cards) {
+    static boolean verifyGoal(final CardDeck.Card[] cards) {
 	CardStack userCardStack;
 	byte cardsCount;
 
@@ -142,8 +143,7 @@ public class TableLogic {
 
 	// three of a color?
 	cardsCount = 0;
-	for (byte card : CardStack.getCardsByColor(CardStack
-		.getCardColor(cards[0]))) {
+	for (CardDeck.Card card : CardStack.getCardsByColor(cards[0].getColor())) {
 	    if (userCardStack.hasCard(card)) {
 		cardsCount++;
 	    }
@@ -155,8 +155,7 @@ public class TableLogic {
 
 	// three of a type?
 	cardsCount = 0;
-	for (byte card : CardStack.getCardsByType(CardStack
-		.getCardType(cards[0]))) {
+	for (CardDeck.Card card : CardStack.getCardsByType(cards[0].getType())) {
 	    if (userCardStack.hasCard(card)) {
 		cardsCount++;
 	    }
@@ -186,14 +185,13 @@ public class TableLogic {
 	    this.proxyInteractionEvent(action, data);
 	    return true;
 	case DROP_CARD:
-	    CardStack.validateCardIndex((byte) data);
-	    this.table.getCardStack().addCard((byte) data);
+	    this.table.getCardStack().addCard((CardDeck.Card) data);
 	    this.table.player.setTookAction();
 	    this.table.player.fireEvent(Event.CARD_DROPPED, data);
 	    this.proxyInteractionEvent(action, data);
 	    break;
 	case END_CALL:
-	    byte[] userCards = (byte[]) data;
+	    CardDeck.Card[] userCards = (CardDeck.Card[]) data;
 	    try {
 		if (TableLogic.verifyGoal(userCards)
 			&& this.table.game.round.close()) {
@@ -215,7 +213,7 @@ public class TableLogic {
 	    return true;
 	case PICK_CARD:
 	    try {
-		this.table.getCardStack().removeCard((byte) data);
+		this.table.getCardStack().removeCard((CardDeck.Card) data);
 		this.table.player.setTookAction();
 		this.proxyInteractionEvent(action, data);
 		return true;

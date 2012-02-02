@@ -2,8 +2,11 @@ package swimgame.table;
 
 import java.util.Formatter;
 
+import cardGame.player.IPlayer;
+import cardGame.table.ITableController;
+
+
 import swimgame.out.Console;
-import swimgame.player.IPlayer;
 import swimgame.table.logic.TableLogicException;
 
 /**

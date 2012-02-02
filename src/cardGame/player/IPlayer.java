@@ -1,7 +1,8 @@
-package swimgame.player;
+package cardGame.player;
 
 import swimgame.table.CardStack;
 import swimgame.table.logic.TableLogic;
+import cardGame.CardDeck.Card;
 
 /**
  * Interface for a player to be able to join the game. A Player model can be
@@ -18,7 +19,7 @@ public interface IPlayer {
      *            Array of card indices
      * @see CardStack
      */
-    void setCards(final byte[] cards);
+    void setCards(final Card[] cards);
 
     /**
      * Handle {@link TableLogic.Event} events. See {@link TableLogic.Event} for
@@ -40,6 +41,7 @@ public interface IPlayer {
      * 
      * @return False, if we want to retrieve a new set of cards
      */
+    // TODO: remove this from interface as it's game specific
     boolean keepCardSet();
 
     /**
@@ -49,7 +51,7 @@ public interface IPlayer {
      *            Array of card indices
      * @see CardStack
      */
-    void doMove(final byte[] tableCards);
+    void doMove(final Card[] tableCards);
 
     /**
      * Get the list of cards owned by this player.
@@ -57,7 +59,7 @@ public interface IPlayer {
      * @return Array of card indices
      * @see CardStack
      */
-    byte[] getCards();
+    Card[] getCards();
 
     /**
      * Get the name of this player.
@@ -65,6 +67,4 @@ public interface IPlayer {
      * @return The name of this player
      */
     String getName();
-
-    // void setCardStack(final CardStack cardStack);
 }

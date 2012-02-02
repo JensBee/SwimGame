@@ -1,11 +1,13 @@
 package swimgame.player.rating;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import swimgame.out.Debug;
 import swimgame.table.CardStack;
-import swimgame.util.Util;
+import cardGame.CardDeck;
+import cardGame.util.Util;
 
 /**
  * Functions for rating cards while playing. It's possible to set {@link Bias}
@@ -18,20 +20,24 @@ public class Card {
     /** Toggle debugging output for this class. */
     private static final boolean DEBUG = false;
 
+    private static final List<cardGame.CardDeck.Card> CARDDECK =
+	    cardGame.CardDeck.Deck.SKAT.getCards();
+
     public static final int INFLUENCE_SAME_COLOR = 5;
     public static final int INFLUENCE_SAME_TYPE = 10;
 
     // fixed values
     /** Maximum value a card rating by type may reach. */
     protected static final int WORTH_MAX_BY_TYPE = (2 * INFLUENCE_SAME_TYPE)
-	    + Card.getNormalizedCardRating(CardStack.STACK_SIZE - 1)
-	    + Card.getNormalizedCardRating(CardStack.STACK_SIZE - 2)
-	    + Card.getNormalizedCardRating(CardStack.STACK_SIZE - 3);
+	    + Card.getNormalizedCardRating(cardGame.CardDeck.Card.CLUB_ACE)
+	    + Card.getNormalizedCardRating(cardGame.CardDeck.Card.DIAMOND_ACE)
+	    + Card.getNormalizedCardRating(cardGame.CardDeck.Card.HEART_ACE);
     /** Maximum value a card rating by color may reach. */
-    private static final int WORTH_MAX_BY_COLOR = (2 * Card.INFLUENCE_SAME_COLOR)
-	    + Card.getNormalizedCardRating(CardStack.STACK_SIZE - 1)
-	    + Card.getNormalizedCardRating(CardStack.STACK_SIZE - 2)
-	    + Card.getNormalizedCardRating(CardStack.STACK_SIZE - 3);
+    private static final int WORTH_MAX_BY_COLOR =
+	    (2 * Card.INFLUENCE_SAME_COLOR)
+		    + Card.getNormalizedCardRating(cardGame.CardDeck.Card.HEART_ACE)
+		    + Card.getNormalizedCardRating(cardGame.CardDeck.Card.HEART_KING)
+		    + Card.getNormalizedCardRating(cardGame.CardDeck.Card.HEART_QUEEN);
 
     // internal values
     /** {@link CardStack} used for pipelined processing. */
@@ -39,7 +45,7 @@ public class Card {
     /** {@link CardStack} with cards seen in a game. */
     private CardStack colorStack;
     /** Card used for pipelined processing. */
-    private int card;
+    private CardDeck.Card card;
     /** Rating for all pipelined processed. */
     private double pipelineRating = 0;
     /** Steps taken in pipelined processing. */
@@ -102,20 +108,20 @@ public class Card {
 	 */
 	AVAILABILITY {
 	    @Override
-	    double rate(final CardStack stack, final int cardToRate) {
+	    double rate(final CardStack stack, final CardDeck.Card cardToRate) {
 		int maxValue = 0;
-		for (byte stackCard : stack.getCards()) {
+		for (cardGame.CardDeck.Card stackCard : stack.getCards()) {
 		    byte searchStackValue = stack.getCardValue(stackCard);
 		    if (searchStackValue > maxValue) {
 			maxValue = searchStackValue;
 		    }
 		}
 		if (DEBUG) {
-		    double rating = Util.normalize(AVAILABILITY_UNSEEN,
-			    maxValue, stack.getCardValue(cardToRate));
+		    double rating =
+			    Util.normalize(AVAILABILITY_UNSEEN, maxValue,
+				    stack.getCardValue(cardToRate));
 		    Debug.printf(Debug.INFO, Card.class,
-			    "byAvailability: %s %.2f\n",
-			    CardStack.cardToString(cardToRate), rating);
+			    "byAvailability: %s %.2f\n", cardToRate, rating);
 		    return rating;
 		}
 		return Util.normalize(AVAILABILITY_UNSEEN, maxValue,
@@ -126,21 +132,25 @@ public class Card {
 	/** Rate a card based on it's influence on the possible goal-state. */
 	GOAL_DISTANCE {
 	    @Override
-	    double rate(final CardStack stack, final int cardToRate) {
+	    double rate(final CardStack stack, final CardDeck.Card cardToRate) {
 		double rating;
-		final byte[] distances = Stack.goalDistance(stack,
-			stack.getCards());
+		final Object[] distances =
+			Stack.goalDistance(stack, stack.getCards());
 		// bad
-		if (distances[1] == -1) {
-		    rating = Util.normalize(-1, 1, distances[1]);
+		if (distances[1] == null) {
+		    rating = Util.normalize(-1, 1, -1);
 		} else {
 		    double colorValue = 0;
 		    double typeValue = 0;
-		    if (distances[0] == CardStack.getCardColor(cardToRate)) {
-			colorValue = Util.normalize(-1, 1, distances[1]);
-		    } else if (distances[2] == CardStack
-			    .getCardType(cardToRate)) {
-			typeValue = Util.normalize(-1, 1, distances[3]);
+		    CardDeck.Color color = (CardDeck.Color) distances[0];
+		    CardDeck.Type type = (CardDeck.Type) distances[2];
+		    if (color.equals(cardToRate.getColor())) {
+			colorValue =
+				Util.normalize(-1, 1, (Integer) distances[1]);
+		    } else if ((distances[2] != null)
+			    && (type.equals(cardToRate.getType()))) {
+			typeValue =
+				Util.normalize(-1, 1, (Integer) distances[3]);
 		    }
 
 		    if (colorValue > typeValue) {
@@ -152,8 +162,7 @@ public class Card {
 
 		if (DEBUG) {
 		    Debug.printf(Debug.INFO, Card.class,
-			    "byGoalDistance: %s %.2f\n",
-			    CardStack.cardToString(cardToRate), rating);
+			    "byGoalDistance: %s %.2f\n", cardToRate, rating);
 		}
 		return rating;
 	    }
@@ -163,16 +172,16 @@ public class Card {
 	/** Rate a card based on other cards of the same color. */
 	SAME_COLOR {
 	    @Override
-	    double rate(final CardStack stack, final int cardToRate) {
-		final int cardValue = Card.rateColorOrType(stack, cardToRate,
-			CardStack.getCardsByColor(CardStack
-				.getCardColor(cardToRate)),
-			Card.INFLUENCE_SAME_COLOR);
+	    double rate(final CardStack stack, final CardDeck.Card cardToRate) {
+		final int cardValue =
+			Card.rateColorOrType(stack, cardToRate, CardStack
+				.getCardsByColor(cardToRate.getColor()),
+				Card.INFLUENCE_SAME_COLOR);
 		if (DEBUG) {
-		    double rating = Util.normalize(WORTH_MAX_BY_COLOR,
-			    cardValue);
+		    double rating =
+			    Util.normalize(WORTH_MAX_BY_COLOR, cardValue);
 		    Debug.printf(Debug.INFO, Card.class, "byColor: %s %.2f\n",
-			    CardStack.cardToString(cardToRate), rating);
+			    cardToRate, rating);
 		    return rating;
 		}
 		return Util.normalize(WORTH_MAX_BY_COLOR, cardValue);
@@ -183,16 +192,17 @@ public class Card {
 	/** Rate a card based on it's type and cards of the same type. */
 	SAME_TYPE {
 	    @Override
-	    double rate(final CardStack stack, final int cardToRate) {
-		final int cardValue = Card.rateColorOrType(stack, cardToRate,
-			CardStack.getCardsByType(CardStack
-				.getCardType(cardToRate)), INFLUENCE_SAME_TYPE);
+	    double rate(final CardStack stack, final CardDeck.Card cardToRate) {
+		final int cardValue =
+			Card.rateColorOrType(stack, cardToRate,
+				CardStack.getCardsByType(cardToRate.getType()),
+				INFLUENCE_SAME_TYPE);
 
 		if (DEBUG) {
-		    double rating = Util
-			    .normalize(WORTH_MAX_BY_TYPE, cardValue);
+		    double rating =
+			    Util.normalize(WORTH_MAX_BY_TYPE, cardValue);
 		    Debug.printf(Debug.INFO, Card.class, "byType: %s %.2f\n",
-			    CardStack.cardToString(cardToRate), rating);
+			    cardToRate, rating);
 		    return rating;
 		}
 
@@ -212,7 +222,7 @@ public class Card {
 	 *            Card to rate
 	 * @return Rating result
 	 */
-	abstract double rate(CardStack stack, int cardToRate);
+	abstract double rate(CardStack stack, CardDeck.Card cardToRate);
     }
 
     /** Empty constructor. */
@@ -283,7 +293,8 @@ public class Card {
      *            Card to check
      * @return Card
      */
-    public final Card pipeline(final CardStack newSearchStack, final int newCard) {
+    public final Card pipeline(final CardStack newSearchStack,
+	    final CardDeck.Card newCard) {
 	this.reset();
 	this.searchStack = newSearchStack;
 	this.card = newCard;
@@ -308,7 +319,7 @@ public class Card {
 	this.resetPipeline();
 	this.colorStack = new CardStack();
 	this.searchStack = new CardStack();
-	this.card = 0;
+	this.card = null;
     }
 
     /**
@@ -330,9 +341,8 @@ public class Card {
 	if (DEBUG) {
 	    double rating = this.pipelineRating / this.pipelineSteps;
 	    Debug.printf(Debug.INFO, Card.class,
-		    "getRating: %s: (%.2f/%d) = %.2f\n",
-		    CardStack.cardToString(this.card), this.pipelineRating,
-		    this.pipelineSteps, rating);
+		    "getRating: %s: (%.2f/%d) = %.2f\n", this.card,
+		    this.pipelineRating, this.pipelineSteps, rating);
 	    return rating;
 	}
 	return this.pipelineRating / this.pipelineSteps;
@@ -348,18 +358,16 @@ public class Card {
      * @return Rating value for the given card
      */
     public final double getRating(final CardStack newSearchStack,
-	    final int newCard) {
+	    final CardDeck.Card newCard) {
 	if (DEBUG) {
-	    Debug.printf(Debug.INFO, Card.class, "getRating: %s>>>\n",
-		    CardStack.cardToString(newCard));
+	    Debug.printf(Debug.INFO, Card.class, "getRating: %s>>>\n", newCard);
 	}
 	this.resetPipeline();
 	this.searchStack = newSearchStack;
 	this.card = newCard;
 	if (DEBUG) {
 	    double rating = this.getRating();
-	    Debug.printf(Debug.INFO, Card.class, "getRating: <<<%s\n",
-		    CardStack.cardToString(newCard));
+	    Debug.printf(Debug.INFO, Card.class, "getRating: <<<%s\n", newCard);
 	    return rating;
 	}
 	return this.getRating();
@@ -373,8 +381,9 @@ public class Card {
      * @return Rating result
      */
     public final double biasRate(final Rate rating) {
-	double ratingResult = rating.rate(this.searchStack, this.card)
-		* this.getBiasValue(Bias.valueOf(rating.name()));
+	double ratingResult =
+		rating.rate(this.searchStack, this.card)
+			* this.getBiasValue(Bias.valueOf(rating.name()));
 	if (DEBUG) {
 	    // need to wrap parameters in Object[] to avoid ambiguity
 	    Debug.printf(
@@ -399,11 +408,12 @@ public class Card {
      * @return Rating result
      */
     private static int rateColorOrType(final CardStack searchStack,
-	    final int card, final byte[] cardsArray, final int influence) {
+	    final CardDeck.Card card, final CardDeck.Card[] cardsArray,
+	    final int influence) {
 	int cardValue = 0;
 	int same = 0;
 
-	for (byte stackCard : cardsArray) {
+	for (CardDeck.Card stackCard : cardsArray) {
 	    if (searchStack.hasCard(stackCard)) {
 		same++;
 		cardValue = cardValue + Card.getNormalizedCardRating(card);
@@ -433,7 +443,8 @@ public class Card {
      *            Card to test against the collected color amount
      * @return Rating
      */
-    static double byColorFrequency(final byte[] colorIndex, final int card) {
+    static double byColorFrequency(final byte[] colorIndex,
+	    final CardDeck.Card card) {
 	int maxValue = 0;
 	for (byte value : colorIndex) {
 	    if (value > maxValue) {
@@ -446,14 +457,14 @@ public class Card {
 	}
 
 	if (DEBUG) {
-	    double rating = Util.normalize(maxValue,
-		    colorIndex[CardStack.getCardColor(card)]);
+	    double rating =
+		    Util.normalize(maxValue, colorIndex[card.getColor()
+			    .ordinal()]);
 	    Debug.printf(Debug.INFO, Card.class, "byColorFrequency: %s %.2f\n",
-		    CardStack.cardToString(card), rating);
+		    card, rating);
 	    return rating;
 	}
-	return Util.normalize(maxValue,
-		colorIndex[CardStack.getCardColor(card)]);
+	return Util.normalize(maxValue, colorIndex[card.getColor().ordinal()]);
     }
 
     /**
@@ -470,18 +481,18 @@ public class Card {
 	this.pipelineSteps++;
 	byte[] colorIndex = new byte[CardStack.CARDS_MAX_COLOR];
 	byte colorValue;
-	for (byte currentCard : this.colorStack.getCards()) {
-	    colorValue = colorIndex[CardStack.getCardColor(currentCard)];
-	    colorIndex[CardStack.getCardColor(this.card)] = colorValue++;
+	for (CardDeck.Card currentCard : this.colorStack.getCards()) {
+	    colorValue = colorIndex[currentCard.getColor().ordinal()];
+	    colorIndex[this.card.getColor().ordinal()] = colorValue++;
 	}
-	double rating = (Card.byColorFrequency(colorIndex, this.card) * this
-		.getBiasValue(Bias.SAME_COLOR));
+	double rating =
+		(Card.byColorFrequency(colorIndex, this.card) * this
+			.getBiasValue(Bias.SAME_COLOR));
 	this.pipelineRating += rating;
 	if (DEBUG) {
 	    Debug.printf(Debug.INFO, Card.class,
 		    "byColorFrequency (bias %.2f): %s %.2f\n",
-		    this.getBiasValue(Bias.SAME_COLOR),
-		    CardStack.cardToString(this.card), rating);
+		    this.getBiasValue(Bias.SAME_COLOR), this.card, rating);
 	}
 	return this;
     }
@@ -498,7 +509,7 @@ public class Card {
      *            Card to rate
      * @return Rating
      */
-    public static final int getNormalizedCardRating(final int card) {
+    public static final int getNormalizedCardRating(final CardDeck.Card card) {
 	final int value = Card.getCardRating(card);
 	int rating = 0;
 	// CHECKSTYLE:OFF
@@ -514,8 +525,7 @@ public class Card {
 	// CHECKSTYLE:ON
 	if (DEBUG) {
 	    Debug.printf(Debug.INFO, Card.class,
-		    "getNormalizedCardRating: %s %d\n",
-		    CardStack.cardToString(card), rating);
+		    "getNormalizedCardRating: %s %d\n", card, rating);
 	}
 	return rating;
     }
@@ -527,19 +537,20 @@ public class Card {
      *            Card to rate
      * @return Rating
      */
-    public static final byte getCardRating(final int card) {
+    public static final byte getCardRating(final CardDeck.Card card) {
 	byte rating;
+	byte cardIndex = (byte) CARDDECK.indexOf(card);
 
-	CardStack.validateCardIndex(card);
-	if (card < CardStack.CARDS_MAX_CARD) {
-	    rating = (byte) card;
+	if (cardIndex < CardStack.CARDS_MAX_CARD) {
+	    rating = (byte) CARDDECK.indexOf(card);
 	} else {
-	    rating = (byte) (card - ((card / CardStack.CARDS_MAX_CARD) * CardStack.CARDS_MAX_CARD));
+	    rating =
+		    (byte) (cardIndex - ((cardIndex / CardStack.CARDS_MAX_CARD) * CardStack.CARDS_MAX_CARD));
 	}
 
 	if (DEBUG) {
 	    Debug.printf(Debug.INFO, Card.class, "getCardRating: %s %d\n",
-		    CardStack.cardToString(card), rating);
+		    card, rating);
 	}
 	return rating;
     }
@@ -551,12 +562,13 @@ public class Card {
      *            Card to rate
      * @return Rating
      */
-    static double byValue(final int card) {
+    static double byValue(final CardDeck.Card card) {
 	if (DEBUG) {
-	    double rating = Util.normalize(CardStack.CARDS_MAX_CARD - 1,
-		    Card.getCardRating(card));
-	    Debug.printf(Debug.INFO, Card.class, "byValue: %s %.2f\n",
-		    CardStack.cardToString(card), rating);
+	    double rating =
+		    Util.normalize(CardStack.CARDS_MAX_CARD - 1,
+			    Card.getCardRating(card));
+	    Debug.printf(Debug.INFO, Card.class, "byValue: %s %.2f\n", card,
+		    rating);
 	    return rating;
 	}
 
@@ -571,7 +583,7 @@ public class Card {
      * @param card
      *            Card seen
      */
-    public final void cardSeen(final byte card) {
+    public final void cardSeen(final cardGame.CardDeck.Card card) {
 	this.colorStack.addCard(card);
     }
 
@@ -587,7 +599,7 @@ public class Card {
      *            The new value we try to assign
      */
     public static final void uprate(final CardStack searchStack,
-	    final int card, final int newValue) {
+	    final CardDeck.Card card, final int newValue) {
 	final int oldValue = searchStack.getCardValue(card);
 	searchStack.setCardValue(card, (byte) (oldValue > newValue ? oldValue
 		: newValue));

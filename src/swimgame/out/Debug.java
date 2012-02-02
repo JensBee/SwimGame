@@ -2,7 +2,8 @@ package swimgame.out;
 
 import java.io.PrintStream;
 
-import swimgame.player.IPlayer;
+import cardGame.player.IPlayer;
+
 
 public class Debug {
     /** Debug level for a talkish level messages. */

@@ -4,10 +4,11 @@ import java.io.IOException;
 
 import swimgame.out.Console;
 import swimgame.out.Debug;
-import swimgame.player.IPlayer;
 import swimgame.table.logic.Game;
 import swimgame.table.logic.TableLogic;
 import swimgame.table.logic.TableLogic.Action;
+import cardGame.CardDeck;
+import cardGame.player.IPlayer;
 
 /**
  * Default implementation of a TableController.
@@ -75,8 +76,9 @@ public class DefaultTableController extends AbstractTableController {
 			String.format("*** Game %d ** Round %d ***",
 				game.current(), game.getRound().getCurrent()));
 
-		this.currentPlayer = this.tableLogic.getTable().getGame()
-			.getRound().nextPlayer();
+		this.currentPlayer =
+			this.tableLogic.getTable().getGame().getRound()
+				.nextPlayer();
 		if (game.getRound().isClosedBy(this.currentPlayer)) {
 		    break;
 		}
@@ -124,17 +126,17 @@ public class DefaultTableController extends AbstractTableController {
 
 	this.logWriter.write("Player game-rating:");
 	for (IPlayer player : this.tableLogic.getTable().getPlayer().asList()) {
-	    final byte[] playerCards = player.getCards();
-	    final String playerName = (this.tableLogic.getTable().getGame()
-		    .getRound().isClosedBy(player)) ? "* " + player.toString()
-		    : player.toString();
+	    final CardDeck.Card[] playerCards = player.getCards();
+	    final String playerName =
+		    (this.tableLogic.getTable().getGame().getRound()
+			    .isClosedBy(player)) ? "* " + player.toString()
+			    : player.toString();
 	    if (playerCards == null) {
 		this.logWriter.write(" %s gave us no card information",
 			playerName);
 	    } else {
 		this.logWriter.write(" %s's cards: %s value: %.0f", playerName,
-			CardStack.cardsToString(playerCards),
-			CardStack.calculateValue(playerCards));
+			playerCards, CardStack.calculateValue(playerCards));
 	    }
 	}
 
@@ -159,19 +161,20 @@ public class DefaultTableController extends AbstractTableController {
 	    final Object data) {
 	switch (action) {
 	case DROP_CARD:
-	    this.logWriter.player("dropped %s",
-		    CardStack.cardToString((byte) data));
+	    this.logWriter.player("dropped %s", (CardDeck.Card) data);
 	    break;
 	case DROP_CARDSTACK_INITIAL:
-	    this.logWriter.player("drops the initial card set: %s",
-		    CardStack.cardsToString((byte[]) data));
+	    StringBuffer cardString = new StringBuffer();
+	    for (CardDeck.Card card : (CardDeck.Card[]) data) {
+		cardString.append(card);
+	    }
+	    this.logWriter.player("drops the initial card set: %s", cardString);
 	    break;
 	case END_CALL:
 	    this.logWriter.player("is closing. Last call!");
 	    break;
 	case PICK_CARD:
-	    this.logWriter.player("picked card %s",
-		    CardStack.cardToString((byte) data));
+	    this.logWriter.player("picked card %s", (CardDeck.Card) data);
 	    break;
 	case INITIAL_CARDSTACK_PICKED:
 	    this.logWriter.player("picked the initial card set");

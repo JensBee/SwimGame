@@ -1,6 +1,6 @@
 package swimgame.table.logic;
 
-import swimgame.player.IPlayer;
+import cardGame.player.IPlayer;
 
 /**
  * Custom exceptions for the TableLogic package.

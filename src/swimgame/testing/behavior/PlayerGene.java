@@ -5,9 +5,10 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import cardGame.util.Util;
+
 import swimgame.player.DefaultPlayer;
 import swimgame.player.rating.Card;
-import swimgame.util.Util;
 
 /**
  * Gene for a player.

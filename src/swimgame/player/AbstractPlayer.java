@@ -4,11 +4,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import cardGame.CardDeck.Card;
+import cardGame.player.IPlayer;
+import cardGame.util.Util;
+
 import swimgame.out.Console;
 import swimgame.out.Debug;
 import swimgame.table.CardStack;
 import swimgame.table.logic.TableLogic;
-import swimgame.util.Util;
 
 /**
  * A player playing the game. This abstract class handles the basic player
@@ -46,7 +49,7 @@ abstract class AbstractPlayer implements IPlayer {
     }
 
     @Override
-    public void setCards(final byte[] cards) {
+    public void setCards(final Card[] cards) {
 	this.setCardStack(new CardStack(cards));
 	Debug.printf(Debug.INFO, this, "Recieved cards: %s\n",
 		this.getCardStack());
@@ -78,12 +81,12 @@ abstract class AbstractPlayer implements IPlayer {
     }
 
     @Override
-    public byte[] getCards() {
+    public Card[] getCards() {
 	if (this.getCardStack() != null) {
 	    return this.getCardStack().getCards();
 	} else {
 	    // TODO: sport an error notice
-	    return new byte[] {};
+	    return new Card[] {};
 	}
     }
 
@@ -91,7 +94,8 @@ abstract class AbstractPlayer implements IPlayer {
     abstract void setGameClosed();
 
     @Override
-    public void handleTableEvent(final TableLogic.Event event, final Object data) {
+    public void
+	    handleTableEvent(final TableLogic.Event event, final Object data) {
 	switch (event) {
 	case GAME_CLOSED:
 	    this.setGameClosed();

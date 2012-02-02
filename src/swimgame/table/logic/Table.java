@@ -1,7 +1,8 @@
 package swimgame.table.logic;
 
+import cardGame.CardDeck.Card;
+import cardGame.player.IPlayer;
 import swimgame.player.DefaultPlayer;
-import swimgame.player.IPlayer;
 import swimgame.table.CardStack;
 import swimgame.table.logic.TableLogic.Action;
 import swimgame.table.logic.TableLogic.Event;
@@ -137,8 +138,8 @@ public class Table {
      * 
      * @return The randomly generated card set
      */
-    private byte[] getPlayerCardSet() {
-	return new byte[] { this.cardStack.getRandomCard(),
+    private Card[] getPlayerCardSet() {
+	return new Card[] { this.cardStack.getRandomCard(),
 		this.cardStack.getRandomCard(), this.cardStack.getRandomCard() };
     }
 
@@ -149,7 +150,7 @@ public class Table {
      *            The player receiving the initial stack of cards
      */
     protected final void dealOutCards(final IPlayer beginningPlayer) {
-	byte[] initialCardSet = new byte[TableLogic.INITIAL_CARDS];
+	Card[] initialCardSet = new Card[TableLogic.INITIAL_CARDS];
 
 	for (IPlayer currentPlayer : this.player.asList()) {
 	    if (currentPlayer.equals(beginningPlayer)) {
@@ -173,7 +174,7 @@ public class Table {
 	    beginningPlayer.setCards(this.getPlayerCardSet());
 	} else {
 	    // player took first cards - make a second public
-	    byte[] cards = this.getPlayerCardSet();
+	    Card[] cards = this.getPlayerCardSet();
 	    this.logic.proxyInteractionEvent(Action.INITIAL_CARDSTACK_PICKED,
 		    null);
 	    // update cards on table

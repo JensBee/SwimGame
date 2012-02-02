@@ -1,6 +1,6 @@
 package swimgame.out;
 
-import swimgame.player.IPlayer;
+import cardGame.player.IPlayer;
 
 public final class Console {
     public static boolean blocked = false;

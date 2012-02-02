@@ -2,7 +2,8 @@ package swimgame.table.logic;
 
 import java.util.Iterator;
 
-import swimgame.player.IPlayer;
+import cardGame.player.IPlayer;
+
 import swimgame.table.CardStack;
 
 /**

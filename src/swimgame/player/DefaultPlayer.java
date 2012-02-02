@@ -8,6 +8,8 @@ import swimgame.player.rating.Card;
 import swimgame.player.rating.Stack;
 import swimgame.table.CardStack;
 import swimgame.table.logic.TableLogic;
+import cardGame.CardDeck;
+import cardGame.player.IPlayer;
 
 /**
  * A player playing the game. The default implementation of a player.
@@ -33,9 +35,7 @@ public class DefaultPlayer extends AbstractPlayer {
     /** rating cards. */
     private Card cardRating;
     /** Cards on the table to decide on (if it's our turn). */
-    private byte[] cardsTableTriple = new byte[] {
-	    CardStack.FLAG_UNINITIALIZED, CardStack.FLAG_UNINITIALIZED,
-	    CardStack.FLAG_UNINITIALIZED };
+    private CardDeck.Card[] cardsTableTriple = new CardDeck.Card[3];
     /** {@link TableLogic} of the game table. */
     private final TableLogic tableLogic;
     /** The name of this {@link IPlayer} instance. */
@@ -178,11 +178,11 @@ public class DefaultPlayer extends AbstractPlayer {
     }
 
     @Override
-    public final void setCards(final byte[] cards) {
+    public final void setCards(final cardGame.CardDeck.Card[] cards) {
 	super.setCards(cards);
 	this.cardRating.reset();
 	// store our own cards as being in the game
-	for (byte card : cards) {
+	for (cardGame.CardDeck.Card card : cards) {
 	    this.cardRating.cardSeen(card);
 	}
     }
@@ -218,7 +218,7 @@ public class DefaultPlayer extends AbstractPlayer {
      */
     private void rateCards() {
 	Debug.println(Debug.TALK, this, "Rating my current cards..");
-	for (byte card : this.cardStack.getCards()) {
+	for (CardDeck.Card card : this.cardStack.getCards()) {
 	    this.cardStackNeed.setCardValue(card,
 		    (byte) this.cardRating.getRating(this.cardStack, card));
 	}
@@ -233,16 +233,18 @@ public class DefaultPlayer extends AbstractPlayer {
      *            Array containing the card-indices for the cards to sort
      * @return The input array sorted by card-values
      */
-    private byte[] sortCardTriple(final CardStack stack, final byte[] triple) {
-	byte[] sortedTriple = new byte[] { CardStack.FLAG_UNINITIALIZED,
-		CardStack.FLAG_UNINITIALIZED, CardStack.FLAG_UNINITIALIZED };
+    private CardDeck.Card[] sortCardTriple(final CardStack stack,
+	    final CardDeck.Card[] triple) {
+	CardDeck.Card[] sortedTriple = new CardDeck.Card[3];
 
 	for (int i = 0; i < 3; i++) {
 	    for (int j = 0; j < 3; j++) {
-		int sourceValue = (triple[i] == CardStack.FLAG_UNINITIALIZED) ? CardStack.FLAG_UNINITIALIZED
-			: stack.getCardValue(triple[i]);
-		int targetValue = (sortedTriple[j] == CardStack.FLAG_UNINITIALIZED) ? CardStack.FLAG_UNINITIALIZED
-			: stack.getCardValue(sortedTriple[j]);
+		int sourceValue =
+			(triple[i] == null ? CardStack.FLAG_UNINITIALIZED
+				: stack.getCardValue(triple[i]));
+		int targetValue =
+			(sortedTriple[j] == null ? CardStack.FLAG_UNINITIALIZED
+				: stack.getCardValue(sortedTriple[j]));
 		if (sourceValue >= targetValue) {
 		    // shift content..
 		    if (j == 0) {
@@ -261,7 +263,7 @@ public class DefaultPlayer extends AbstractPlayer {
     }
 
     @Override
-    public final void doMove(final byte[] tableCards) {
+    public final void doMove(final CardDeck.Card[] tableCards) {
 	int index;
 	double dropValue;
 	Debug.println(Debug.INFO, this,
@@ -272,28 +274,26 @@ public class DefaultPlayer extends AbstractPlayer {
 
 	// get cards on table
 	index = 0;
-	for (byte card : tableCards) {
+	for (CardDeck.Card card : tableCards) {
 	    this.cardsTableTriple[index++] = card;
 	}
 
 	// rate table cards
-	this.cardsTableTriple = this.sortCardTriple(this.cardStackNeed,
-		this.cardsTableTriple);
+	this.cardsTableTriple =
+		this.sortCardTriple(this.cardStackNeed, this.cardsTableTriple);
 	if (Debug.debug && (Debug.debugLevel == Debug.INFO)) {
 	    Debug.print(Debug.INFO, this, "My table cards rating: ");
-	    for (byte card : this.cardsTableTriple) {
-		Debug.print(Debug.INFO, String.format("%s:%d ",
-			CardStack.cardToString(card),
-			this.cardStackNeed.getCardValue(card)));
+	    for (CardDeck.Card card : this.cardsTableTriple) {
+		Debug.print(
+			Debug.INFO,
+			String.format("%s:%d ", card,
+				this.cardStackNeed.getCardValue(card)));
 	    }
 	    Debug.print(Debug.INFO, "\n");
 	}
 	// make a pick suggestion
-	Debug.println(
-		Debug.TALK,
-		this,
-		"Thought: I'll pick "
-			+ CardStack.cardToString(this.cardsTableTriple[0]));
+	Debug.println(Debug.TALK, this, "Thought: I'll pick "
+		+ this.cardsTableTriple[0]);
 
 	// rate own cards
 	this.rateCards();
@@ -303,19 +303,17 @@ public class DefaultPlayer extends AbstractPlayer {
 		+ this.cardStackNeed.dump().toString() + "\n");
 
 	// estimate goal distance
-	byte[] goalDistance = Stack.goalDistance(this.cardStack);
+	Object[] goalDistance = Stack.goalDistance(this.cardStack);
 	if (Debug.debug) {
-	    if ((goalDistance[0] != -1) || (goalDistance[2] != -1)) {
+	    if ((goalDistance[0] != null) || (goalDistance[2] != null)) {
 		Debug.print(Debug.INFO, this, "Goal distance(s): ");
-		if (goalDistance[0] > -1) {
+		if ((CardDeck.Color) goalDistance[0] != null) {
 		    Debug.print(Debug.INFO, String.format("[%s?]:%d ",
-			    CardStack.CARD_SYMBOLS[goalDistance[0]],
-			    goalDistance[1]));
+			    goalDistance[0], goalDistance[1]));
 		}
-		if (goalDistance[2] > -1) {
+		if ((CardDeck.Type) goalDistance[2] != null) {
 		    Debug.print(Debug.INFO, String.format("[?%s]:%d",
-			    CardStack.CARD_NAMES[goalDistance[2]],
-			    goalDistance[3]));
+			    goalDistance[2], goalDistance[3]));
 		}
 		Debug.nl(Debug.INFO);
 	    } else {
@@ -328,13 +326,13 @@ public class DefaultPlayer extends AbstractPlayer {
 	Debug.println(Debug.INFO, this, "Drop value: " + dropValue);
 
 	// make a drop suggestion
-	byte[] cardToDrop = new byte[] { CardStack.FLAG_UNINITIALIZED,
-		CardStack.FLAG_UNINITIALIZED };
+	Object[] cardToDrop = new Object[2];
 
-	cardToDrop[1] = 127; // make sure all cards will be lower
-	for (byte card : this.cardStack.getCards()) {
-	    byte cardValue = this.cardStackNeed.getCardValue(card);
-	    if ((cardValue == -1) || (cardValue < cardToDrop[1])) {
+	cardToDrop[1] = new Integer(127); // make sure all cards will be lower
+	for (CardDeck.Card card : this.cardStack.getCards()) {
+	    Integer cardValue =
+		    new Integer(this.cardStackNeed.getCardValue(card));
+	    if ((cardValue == -1) || (cardValue < (Integer) cardToDrop[1])) {
 		cardToDrop[0] = card;
 		cardToDrop[1] = cardValue;
 	    }
@@ -346,7 +344,7 @@ public class DefaultPlayer extends AbstractPlayer {
 	    this.tableLogic.interact(TableLogic.Action.END_CALL,
 		    this.cardStack.getCards());
 	} else {
-	    if (cardToDrop[0] == -1) {
+	    if (cardToDrop[0] == null) {
 		// TODO: evaluate skip action
 	    } else {
 		// drop & pick
@@ -358,7 +356,8 @@ public class DefaultPlayer extends AbstractPlayer {
 		    try {
 			Debug.printf(Debug.INFO, this, "Drop %s Pick %s"
 				+ cardToDrop[0], this.cardsTableTriple[0]);
-			this.cardStack.removeCard(cardToDrop[0]);
+			this.cardStack
+				.removeCard((CardDeck.Card) cardToDrop[0]);
 			this.cardStack.addCard(this.cardsTableTriple[0]);
 		    } catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -377,7 +376,7 @@ public class DefaultPlayer extends AbstractPlayer {
 	    final Object data) {
 	switch (event) {
 	case INITIAL_CARDSTACK_DROPPED:
-	    this.cardStackTable.addCard((byte[]) data);
+	    this.cardStackTable.addCard((CardDeck.Card[]) data);
 	    break;
 	case GAME_CLOSED:
 	    this.gameIsClosed = true;
@@ -386,7 +385,7 @@ public class DefaultPlayer extends AbstractPlayer {
 	    this.initialize();
 	    break;
 	case CARD_DROPPED:
-	    this.cardRating.cardSeen((byte) data);
+	    this.cardRating.cardSeen((CardDeck.Card) data);
 	    break;
 	default:
 	    break;

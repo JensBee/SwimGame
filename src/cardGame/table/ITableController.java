@@ -1,6 +1,6 @@
-package swimgame.table;
+package cardGame.table;
 
-import swimgame.player.IPlayer;
+import cardGame.player.IPlayer;
 import swimgame.table.logic.TableLogic;
 import swimgame.table.logic.TableLogicException;
 

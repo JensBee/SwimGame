@@ -2,9 +2,11 @@ package swimgame.testing.behavior;
 
 import java.util.ArrayList;
 
+import cardGame.CardDeck;
+import cardGame.player.IPlayer;
+
 import swimgame.out.Console;
 import swimgame.out.Debug;
-import swimgame.player.IPlayer;
 import swimgame.table.CardStack;
 import swimgame.table.DefaultTableController;
 
@@ -32,12 +34,12 @@ public class BehaviorTest {
 
 	final BasicTable table = new BasicTable();
 	final GenePool genePool = new GenePool(NUMBER_OF_GENES);
-	final ArrayList<Double[]> gameRatings = new ArrayList<Double[]>(
-		NUMBER_OF_TURNS);
+	final ArrayList<Double[]> gameRatings =
+		new ArrayList<Double[]>(NUMBER_OF_TURNS);
 
 	DefaultTableController.setPauseAfterRound(false);
-	MutablePlayer mutablePlayer = new MutablePlayer(table.getLogic(),
-		"Mutable");
+	MutablePlayer mutablePlayer =
+		new MutablePlayer(table.getLogic(), "Mutable");
 	// init the test-player with a random gene
 	mutablePlayer.setBias(genePool.getRandomGene().getPlayerBias());
 	mutablePlayer.setCardBiasValue(genePool.getRandomGene()
@@ -100,11 +102,14 @@ public class BehaviorTest {
 		gamePoints = CardStack.calculateValue(player.getCards());
 
 		// debug out
+		StringBuffer cardString = new StringBuffer();
+		for (CardDeck.Card card : player.getCards()) {
+		    cardString.append(card.toString());
+		}
 		System.out.println(String.format("Rating: %-"
 			+ playerNameLength
 			+ "s %15s Rank:%d Rating:%.2f Points:%.2f", player,
-			CardStack.cardsToString(player.getCards()), rank,
-			ratingPoints, gamePoints));
+			cardString, rank, ratingPoints, gamePoints));
 
 		// store test-player ratings [place, points]
 		gameRatings.add(new Double[] { ratingPoints, gamePoints });

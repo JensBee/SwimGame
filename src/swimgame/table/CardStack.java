@@ -2,9 +2,11 @@ package swimgame.table;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 
 import swimgame.table.logic.TableLogic;
-import swimgame.util.Util;
+import cardGame.CardDeck;
+import cardGame.util.Util;
 
 /**
  * A card stack as part of the game. This is initially the full set of cards
@@ -24,6 +26,10 @@ import swimgame.util.Util;
  * 
  */
 public class CardStack {
+    /** All {@link Card}s possible in this game. */
+    private static final List<CardDeck.Card> CARDS = CardDeck.Deck.SKAT
+	    .getCards();
+
     /** Denotes this stacks empty state. */
     private boolean empty = true;
 
@@ -33,7 +39,8 @@ public class CardStack {
     /** How many different cards per color a present in a card stack? */
     public static final int CARDS_MAX_CARD = 8;
     /** How many cards are present in a card stack? */
-    public static final int STACK_SIZE = (CardStack.CARDS_MAX_CARD * CardStack.CARDS_MAX_COLOR);
+    public static final int STACK_SIZE =
+	    (CardStack.CARDS_MAX_CARD * CardStack.CARDS_MAX_COLOR);
     /** Minimum number of points reachable. */
     public static final int STACKVALUE_MIN = 24; // 7 + 8 + 9
     /** Maximum number of points reachable. */
@@ -76,8 +83,9 @@ public class CardStack {
 	int idx = 0;
 	for (int color = 0; color < CardStack.CARDS_MAX_COLOR; color++) {
 	    for (int currentCard = 0; currentCard < CardStack.CARDS_MAX_CARD; currentCard++) {
-		CardStack.cardStackStr[idx++] = CardStack.CARD_SYMBOLS[color]
-			+ CardStack.CARD_NAMES[currentCard];
+		CardStack.cardStackStr[idx++] =
+			CardStack.CARD_SYMBOLS[color]
+				+ CardStack.CARD_NAMES[currentCard];
 	    }
 	}
     }
@@ -114,7 +122,7 @@ public class CardStack {
      * @param initialCards
      *            An initial set of cards to initialize this stack
      */
-    public CardStack(final byte[] initialCards) {
+    public CardStack(final CardDeck.Card[] initialCards) {
 	CardStack.buildStringArray();
 	// TODO: remove initial card amount check
 	if (initialCards.length < TableLogic.INITIAL_CARDS) {
@@ -129,9 +137,9 @@ public class CardStack {
      * @param card
      *            The card to add, specified by it's card-stack array index
      */
-    public final void addCard(final int card) {
-	if (this.cardStack[card] != CardStack.FLAG_HAS_CARD) {
-	    this.cardStack[card] = CardStack.FLAG_HAS_CARD;
+    public final void addCard(final CardDeck.Card card) {
+	if (this.cardStack[CARDS.indexOf(card)] != CardStack.FLAG_HAS_CARD) {
+	    this.cardStack[CARDS.indexOf(card)] = CardStack.FLAG_HAS_CARD;
 	    this.empty = false;
 	    this.cardsCount++;
 	}
@@ -145,12 +153,13 @@ public class CardStack {
      * @throws TableException
      *             Thrown if card could not be dropped
      */
-    public final void removeCard(final int card) throws TableException {
-	if (this.cardStack[card] == CardStack.FLAG_NO_CARD) {
+    public final void removeCard(final CardDeck.Card card)
+	    throws TableException {
+	if (this.cardStack[CARDS.indexOf(card)] == CardStack.FLAG_NO_CARD) {
 	    throw new TableException(TableException.Exception.DROP_NOT_OWNED,
-		    CardStack.cardToString(card));
+		    card);
 	}
-	this.cardStack[card] = CardStack.FLAG_NO_CARD;
+	this.cardStack[CARDS.indexOf(card)] = CardStack.FLAG_NO_CARD;
 	this.cardsCount--;
     }
 
@@ -161,8 +170,8 @@ public class CardStack {
      *            Array of cards to add. Each card is specified by it's
      *            card-stack array index.
      */
-    public final void addCard(final byte[] cards) {
-	for (int card : cards) {
+    public final void addCard(final CardDeck.Card[] cards) {
+	for (CardDeck.Card card : cards) {
 	    this.addCard(card);
 	}
 	CardStack.this.empty = false;
@@ -179,38 +188,10 @@ public class CardStack {
 	    return "";
 	}
 	StringBuffer cards = new StringBuffer();
-	for (byte card : this.getCards()) {
-	    cards.append(CardStack.cardToString(card));
+	for (CardDeck.Card card : this.getCards()) {
+	    cards.append(card.toString());
 	}
 	return cards.toString();
-    }
-
-    /**
-     * Get a string representation of the given card.
-     * 
-     * @param card
-     *            The card by index
-     * @return A string that looks like [♥A] for heart-ace
-     */
-    public static final String cardToString(final int card) {
-	CardStack.validateCardIndex(card);
-	return "[" + CardStack.cardStackStr[card] + "]";
-    }
-
-    /**
-     * Get a string representation of the given cards.
-     * 
-     * @param cards
-     *            Byte array with cards to print
-     * @return String representation of the given cards
-     */
-    public static final String cardsToString(final byte[] cards) {
-	StringBuffer cardString = new StringBuffer();
-	for (byte card : cards) {
-	    CardStack.validateCardIndex(card);
-	    cardString.append("[" + CardStack.cardStackStr[card] + "]");
-	}
-	return cardString.toString();
     }
 
     /**
@@ -230,8 +211,8 @@ public class CardStack {
      * @return The newly created stack
      */
     private static byte[] getNewStack(final boolean full) {
-	byte[] cardStack = new byte[CardStack.CARDS_MAX_CARD
-		* CardStack.CARDS_MAX_COLOR];
+	byte[] cardStack =
+		new byte[CardStack.CARDS_MAX_CARD * CardStack.CARDS_MAX_COLOR];
 	if (full) {
 	    // this stack will contain all cards
 	    for (int i = 0; i < cardStack.length; i++) {
@@ -252,21 +233,6 @@ public class CardStack {
     }
 
     /**
-     * Verify that a card type is in the legal range from 0 to
-     * {@value #CARDS_MAX_CARD}.
-     * 
-     * @param cardType
-     *            The card type to check
-     */
-    public static void validateCardType(final int cardType) {
-	if ((cardType < 0) || (cardType > CardStack.CARDS_MAX_CARD)) {
-	    throw new IllegalArgumentException(String.format(
-		    "Card type %d out of bounds (%d-%d)", cardType, 0,
-		    CardStack.CARDS_MAX_CARD));
-	}
-    }
-
-    /**
      * Gets the stored value for a card.
      * 
      * @param card
@@ -277,53 +243,11 @@ public class CardStack {
      *         {@link #FLAG_NO_CARD} if it isn't. Other values might have been
      *         set by the user by using {@link #setCardValue(int, byte)}.
      */
-    public final byte getCardValue(final int card) {
-	CardStack.validateCardIndex(card);
-	return this.cardStack[card];
-    }
-
-    /**
-     * Get the type for a card.
-     * 
-     * @param card
-     *            Card to check the type for
-     * @return The type of the given card
-     */
-    public static int getCardType(final int card) {
-	CardStack.validateCardIndex(card);
-	if (card < CardStack.CARDS_MAX_CARD) {
-	    return card;
-	} else {
-	    return card % CardStack.CARDS_MAX_CARD;
+    public final byte getCardValue(final CardDeck.Card card) {
+	if (card == null) {
+	    throw new IllegalArgumentException("Card was null.");
 	}
-    }
-
-    /**
-     * Verify that a card color is in the legal range.
-     * 
-     * @param cardColor
-     *            The card color to check
-     */
-    public static void validateCardColor(final int cardColor) {
-	if ((cardColor < 0) || (cardColor >= CardStack.CARDS_MAX_COLOR)) {
-	    throw new IllegalArgumentException(String.format(
-		    "Card color %d out of bounds (%d-%d)", cardColor, 0,
-		    CardStack.CARDS_MAX_COLOR));
-	}
-    }
-
-    /**
-     * Check if a cards position in the stack is a legal one.
-     * 
-     * @param card
-     *            Card to check
-     */
-    public static void validateCardIndex(final int card) {
-	if ((card >= CardStack.STACK_SIZE) || (card < 0)) {
-	    throw new IllegalArgumentException(String.format(
-		    "Card type %d out of bounds (%d-%d)", card, 0,
-		    CardStack.STACK_SIZE));
-	}
+	return this.cardStack[CARDS.indexOf(card)];
     }
 
     /**
@@ -333,13 +257,24 @@ public class CardStack {
      *            The card type to get as int (0-7)
      * @return Card array indices related to the given card type
      */
-    public static byte[] getCardsByType(final int cardType) {
-	CardStack.validateCardType(cardType);
-	byte[] typeCards = new byte[CardStack.CARDS_MAX_COLOR];
+    public static CardDeck.Card[] getCardsByType(final CardDeck.Type cardType) {
+	CardDeck.Card[] typeCards =
+		new CardDeck.Card[CardDeck.Deck.SKAT.numberOfColors()];
+	CardDeck.Type[] gameCardTypes =
+		CardDeck.Deck.SKAT.types().toArray(
+			new CardDeck.Type[CardDeck.Deck.SKAT.numberOfTypes()]);
 
-	final int offset = cardType;
-	for (int i = 0; i < CardStack.CARDS_MAX_COLOR; i++) {
-	    typeCards[i] = (byte) (offset + (i * CardStack.CARDS_MAX_CARD));
+	// find the card of the given type
+	for (int i = 0; i < CardDeck.Deck.SKAT.numberOfTypes(); i++) {
+	    if (cardType.equals(gameCardTypes[i])) {
+		// get cards of all colors for this type
+		for (int j = 0; j < CardDeck.Deck.SKAT.numberOfColors(); j++) {
+		    typeCards[j] =
+			    CARDS.get(i
+				    + (j * CardDeck.Deck.SKAT.numberOfTypes()));
+		}
+		break;
+	    }
 	}
 	return typeCards;
     }
@@ -352,27 +287,16 @@ public class CardStack {
      *            The color as integer (0-3)
      * @return Card array indices related to the given color
      */
-    public static byte[] getCardsByColor(final int cardColor) {
-	CardStack.validateCardColor(cardColor);
-	byte[] colorCards = new byte[CardStack.CARDS_MAX_CARD];
+    public static CardDeck.Card[]
+	    getCardsByColor(final CardDeck.Color cardColor) {
+	CardDeck.Card[] colorCards =
+		new CardDeck.Card[CardStack.CARDS_MAX_CARD];
 
-	final int offset = cardColor * CardStack.CARDS_MAX_CARD;
+	final int offset = cardColor.ordinal() * CardStack.CARDS_MAX_CARD;
 	for (int i = 0; i < CardStack.CARDS_MAX_CARD; i++) {
-	    colorCards[i] = (byte) (offset + i);
+	    colorCards[i] = CARDS.get(offset + i);
 	}
 	return colorCards;
-    }
-
-    /**
-     * Get the color number for a card.
-     * 
-     * @param card
-     *            The card to check
-     * @return The card color: 0=♦; 1=♥; 2=♠; 3=♣
-     */
-    public static final int getCardColor(final int card) {
-	CardStack.validateCardIndex(card);
-	return card / CardStack.CARDS_MAX_CARD;
     }
 
     /**
@@ -421,27 +345,6 @@ public class CardStack {
 	    // be careful we're one ahead here
 	    return this.pointer - 1;
 	}
-
-	/**
-	 * Get the current card type.
-	 * 
-	 * @return The type of the current card
-	 */
-	public final int getCardType() {
-	    return CardStack.getCardType(this.getCard());
-	}
-
-	/**
-	 * Get the color of the current card.
-	 * 
-	 * @return Color of the current card
-	 */
-	public final int getCardColor() {
-	    if (this.pointer < CardStack.CARDS_MAX_CARD) {
-		return 0;
-	    }
-	    return CardStack.getCardColor(this.getCard());
-	}
     }
 
     /**
@@ -450,16 +353,16 @@ public class CardStack {
      * 
      * @return A byte array containing only available cards
      */
-    public final byte[] getCards() {
-	byte[] cards = new byte[this.cardsCount];
+    public final CardDeck.Card[] getCards() {
+	CardDeck.Card[] cards = new CardDeck.Card[this.cardsCount];
 	int currentCard = 0;
 	for (int i = 0; i < this.cardStack.length; i++) {
 	    if (currentCard > this.cardsCount) {
 		// we've found all
 		break;
 	    }
-	    if (this.hasCard(i)) {
-		cards[currentCard++] = (byte) i;
+	    if (this.hasCard(CARDS.get(i))) {
+		cards[currentCard++] = CARDS.get(i);
 	    }
 	}
 	return cards;
@@ -474,12 +377,13 @@ public class CardStack {
      *            Cards to do the calculation for
      * @return The value of the given cards if dropped
      */
-    public static double calculateValue(final byte[] cards) {
+    public static double calculateValue(final CardDeck.Card[] cards) {
 	int value = 0;
 	// three of a color?
 	for (byte color = 0; color < CardStack.CARDS_MAX_COLOR; color++) {
 	    int newValue = 0;
-	    for (byte card : CardStack.getCardsByColor(color)) {
+	    for (CardDeck.Card card : CardStack.getCardsByColor(CardDeck.Color
+		    .values()[color])) {
 		if (CardStack.hasCard(card, cards)) {
 		    newValue = newValue + CardStack.getCardWorth(card);
 		}
@@ -490,10 +394,10 @@ public class CardStack {
 	}
 
 	// three of a type?
-	for (byte type = 0; type < CardStack.CARDS_MAX_CARD; type++) {
+	for (CardDeck.Type type : CardDeck.Type.values()) {
 	    int newValue = 0;
 	    int count = 0;
-	    for (byte card : CardStack.getCardsByType(type)) {
+	    for (CardDeck.Card card : CardStack.getCardsByType(type)) {
 		if (CardStack.hasCard(card, cards)) {
 		    newValue = newValue + CardStack.getCardWorth(card);
 		    count++;
@@ -517,9 +421,9 @@ public class CardStack {
     public final double getValue() {
 	int value = 0;
 	// three of a color?
-	for (byte color = 0; color < CardStack.CARDS_MAX_COLOR; color++) {
+	for (CardDeck.Color color : CardDeck.Deck.SKAT.colors()) {
 	    int newValue = 0;
-	    for (byte card : CardStack.getCardsByColor(color)) {
+	    for (CardDeck.Card card : CardStack.getCardsByColor(color)) {
 		if (this.hasCard(card)) {
 		    newValue = newValue + CardStack.getCardWorth(card);
 		}
@@ -530,10 +434,10 @@ public class CardStack {
 	}
 
 	// three of a type?
-	for (byte type = 0; type < CardStack.CARDS_MAX_CARD; type++) {
+	for (CardDeck.Type type : CardDeck.Deck.SKAT.types()) {
 	    int newValue = 0;
 	    int count = 0;
-	    for (byte card : CardStack.getCardsByType(type)) {
+	    for (CardDeck.Card card : CardStack.getCardsByType(type)) {
 		if (this.hasCard(card)) {
 		    newValue = newValue + CardStack.getCardWorth(card);
 		    count++;
@@ -554,11 +458,14 @@ public class CardStack {
      *            Card to check
      * @return True if it's in the stack
      */
-    public final boolean hasCard(final int card) {
-	CardStack.validateCardIndex(card);
-	// CHECKSTYLE:OFF
-	return (this.cardStack[card] == CardStack.FLAG_HAS_CARD) ? true : false;
-	// CHECKSTYLE:ON
+    public final boolean hasCard(final CardDeck.Card card) {
+	if (card == null) {
+	    throw new IllegalArgumentException("Card was null.");
+	}
+	if (this.cardStack[CARDS.indexOf(card)] == CardStack.FLAG_HAS_CARD) {
+	    return true;
+	}
+	return false;
     }
 
     /**
@@ -570,9 +477,9 @@ public class CardStack {
      *            The cards to check against
      * @return True if the card was found
      */
-    public static boolean hasCard(final int card, final byte[] cards) {
-	CardStack.validateCardIndex(card);
-	for (byte aCard : cards) {
+    public static boolean hasCard(final CardDeck.Card card,
+	    final CardDeck.Card[] cards) {
+	for (CardDeck.Card aCard : cards) {
 	    if (aCard == card) {
 		return true;
 	    }
@@ -587,14 +494,14 @@ public class CardStack {
      *            The card to do the calculation for
      * @return The calculated card value
      */
-    public static byte getCardWorth(final int card) {
+    public static byte getCardWorth(final CardDeck.Card card) {
 	byte worth;
-	CardStack.validateCardIndex(card);
 	int positionValue = 0;
-	if (card < CardStack.CARDS_MAX_CARD) {
-	    positionValue = card;
+	if (CARDS.indexOf(card) < CardStack.CARDS_MAX_CARD) {
+	    positionValue = CARDS.indexOf(card);
 	}
-	positionValue = (card - ((card / CardStack.CARDS_MAX_CARD) * CardStack.CARDS_MAX_CARD));
+	positionValue =
+		(CARDS.indexOf(card) - ((CARDS.indexOf(card) / CardStack.CARDS_MAX_CARD) * CardStack.CARDS_MAX_CARD));
 	// CHECKSTYLE:OFF
 	if (positionValue > 2) {
 	    worth = (byte) (positionValue < 7 ? 10 : 11);
@@ -615,9 +522,8 @@ public class CardStack {
      * @param value
      *            New value for the card
      */
-    public final void setCardValue(final int card, final byte value) {
-	CardStack.validateCardIndex(card);
-	CardStack.this.cardStack[card] = value;
+    public final void setCardValue(final CardDeck.Card card, final byte value) {
+	CardStack.this.cardStack[CARDS.indexOf(card)] = value;
     }
 
     /**
@@ -656,7 +562,7 @@ public class CardStack {
      * @return Byte array representing the card
      * @see swimGame.cards.CardUtils#initCardStack
      */
-    public final byte getRandomCard() {
+    public final CardDeck.Card getRandomCard() {
 	if (this.empty) {
 	    throw new IllegalArgumentException(
 		    "Unable to get a card. Stack is empty!");
@@ -670,7 +576,8 @@ public class CardStack {
 	    if (CardStack.this.cardStack[card] == CardStack.FLAG_HAS_CARD) {
 		// card is there .. take it
 		this.cardStack[card] = CardStack.FLAG_NO_CARD;
-		return (byte) card;
+
+		return CARDS.get(card);
 	    }
 	}
     }
