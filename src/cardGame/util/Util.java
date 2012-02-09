@@ -34,7 +34,7 @@ public class Util {
      *            Current value
      * @return Normalized value
      */
-    public static double normalize(final double max, final double value) {
+    public static float normalize(final float max, final float value) {
 	return Util.normalize(0, max, value);
     }
 
@@ -49,8 +49,8 @@ public class Util {
      *            Current value
      * @return Normalized value
      */
-    public static double normalize(final double min, final double max,
-	    final double value) {
-	return new Double(((value - min) / (max - min)) * 10);
+    public static float normalize(final float min, final float max,
+	    final float value) {
+	return ((value - min) / (max - min)) * 10;
     }
 }

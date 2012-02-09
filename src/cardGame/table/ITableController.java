@@ -1,68 +1,32 @@
 package cardGame.table;
 
-import cardGame.player.IPlayer;
-import swimgame.table.logic.TableLogic;
-import swimgame.table.logic.TableLogicException;
+import cardGame.event.EventReceiver;
+import cardGame.player.CardPlayer;
 
 /**
- * This class controls the table game and interacts with the user running the
- * game.
- * 
- * @author <a href="mailto:code@jens-bertram.net">Jens Bertram</a>
- * 
+ * A TableController is the actual user interface to the game. All interaction
+ * with the game will go through this class.
  */
-public interface ITableController {
-    /**
-     * Handle an events submitted by a player.
-     * 
-     * @param action
-     *            {@link TableLogic.Action} emitted by a player
-     * @param data
-     *            Data associated with the {@link TableLogic.Action}
-     */
-    void handleTableLogicEvent(final TableLogic.Action action, final Object data);
-
-    /**
-     * @see TableLogic.Game#setMaxRoundsToPlay(int)
-     * @param maxRoundsToPlay
-     *            Maximum length of a rounds without anyone winning
-     */
-    void setMaxRoundsToPlay(final int maxRoundsToPlay);
-
-    /**
-     * @see TableLogic.Game#setNumberOfGamesToPlay(int)
-     * @param numberOfGamesToPlay
-     *            Amount of games to play in turn
-     */
-    void setNumberOfGamesToPlay(final int numberOfGamesToPlay);
-
+public interface ITableController extends EventReceiver {
     /**
      * Get the game started. TODO: tell what steps need to be taken here
      */
     void start();
 
     /**
-     * Get the {@link TableLogic} for this {@link ITableController} instance.
+     * @see TableLogic.CardGame#setNumberOfGamesToPlay(int)
+     * @param numberOfGamesToPlay
+     *            Amount of games to play in turn
+     */
+    void setNumberOfGamesToPlay(final int numberOfGamesToPlay);
+
+    /**
+     * Add a single player to the table.
      * 
-     * @return {@link TableLogic} for this {@link ITableController} instance
+     * @param newPlayer
+     *            The {@link CardPlayer} to add
+     * @throws Exception
+     *             Thrown if table is full or closed (game has already begun)
      */
-    TableLogic getLogic();
-
-    /**
-     * @see TableLogic.Table#addPlayers(int)
-     * @param amount
-     *            Amount of players to add
-     * @throws TableLogicException
-     *             Might be thrown, if adding of players failed
-     */
-    void addPlayers(final int amount) throws TableLogicException;
-
-    /**
-     * @see TableLogic.Table#addPlayer(IPlayer)
-     * @param player
-     *            {@link IPlayer} to add to the table
-     * @throws TableLogicException
-     *             Might be thrown, if adding a player failes
-     */
-    void addPlayer(final IPlayer player) throws TableLogicException;
+    void addPlayer(final CardPlayer newPlayer) throws Exception;
 }
