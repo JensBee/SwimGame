@@ -4,7 +4,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-import cardGame.card.CardDeck;
 import cardGame.card.CardDeck.Card;
 import cardGame.event.CardGameEvent;
 import cardGame.event.EventBus;
@@ -161,6 +160,13 @@ class AIPlayer extends GeneralCardPlayer {
 		this.cardsTable.setCards((Set<Card>) data);
 		this.cardsSeen.setCards((Set<Card>) data);
 		break;
+	    case CARD_DROP:
+		this.cardsTable.addCard((Card) data);
+		this.cardsSeen.addCard((Card) data);
+		break;
+	    case CARD_PICK:
+		this.cardsTable.removeCard((Card) data);
+		break;
 	    default:
 		break;
 	    }
@@ -179,38 +185,42 @@ class AIPlayer extends GeneralCardPlayer {
 
     @Override
     public final boolean setCards(final Collection<Card> newCards) {
+	// TODO: only accept cards prior to first round, otherwise throw an
+	// exception
 	this.cardStack.resetCardValues();
 	this.cardStack.setCards(newCards);
-	Debug.printfn(Debug.Level.INFO, "<%s> Received cards:\n%s", this,
+	Debug.printfn(Debug.Level.TALK, "<%s> Received cards:\n%s", this,
 		this.cardStack.dump());
 	return true;
     }
 
     @Override
     public final Collection<Card> getCards() {
+	// TODO: only respond after last round, throw exception otherwise
 	// TODO Auto-generated method stub
 	return null;
     }
 
     /** Game interaction function. */
     private void play() {
+	Card cardToPick = null;
+	Card cardToDrop = null;
+	Object[] goalDistance = this.rating.goalDistance();
 	Debug.printfn(Debug.Level.INFO, "<%s> My Cards: %s", this,
 		this.cardStack);
 
-	// regenerate priority list of needed cards
-	// this.rating.calculateWantedCards();
-	// Debug.printfn(Debug.Level.INFO, "<%s> My wanted cards:\n%s", this,
-	// this.cardsWanted.dump().toString());
+	Debug.printfn(Debug.Level.TALK, "<%s> May table view:\n%s", this,
+		this.cardsTable.dump());
 
 	// now "intelligently" decide on cards
-	Object[] goalDistance = this.rating.goalDistance();
-	Card cardToPick = null;
 	if ((goalDistance[0] != null) || (goalDistance[2] != null)) {
 	    // can we get three of a type?
 	    if (goalDistance[2] != null) {
 		for (Card card : this.cardsTable.getCards()) {
 		    if (card.getType().equals(goalDistance[2])) {
 			cardToPick = card;
+			// no matter witch card it is . the points are fixed
+			break;
 		    }
 		}
 	    }
@@ -218,39 +228,57 @@ class AIPlayer extends GeneralCardPlayer {
 	    if ((goalDistance[0] != null) && (cardToPick == null)) {
 		for (Card card : this.cardsTable.getCards()) {
 		    if (card.getColor().equals(goalDistance[0])) {
-			cardToPick = card;
+			// check all cards to find the highest
+			if ((cardToPick == null)
+				|| (Table.getCardValue(cardToPick) < Table
+					.getCardValue(card))) {
+			    cardToPick = card;
+			}
 		    }
 		}
 	    }
 	}
+
+	// if we are in goal state: simply close the round
+	if (((goalDistance[0] != null) && ((Integer) goalDistance[1] == 0))
+		|| ((goalDistance[2] != null) && ((Integer) goalDistance[3] == 0))) {
+	    this.table.addInteraction(this, Table.Action.CLOSE, null);
+	    this.table.addInteraction(this, Table.Action.FINISHED, null);
+	    if (this.table.commitInteraction(this) == null) {
+		System.out.println("I shouldn't be here!");
+		return;
+	    }
+	}
+
 	if (cardToPick != null) {
 	    Debug.printfn(Debug.Level.INFO, "<%s> Pick suggestion: %s", this,
 		    cardToPick);
-	    this.table.interact(this, Table.Action.CARD_PICK, cardToPick);
+	    this.table.addInteraction(this, Table.Action.CARD_PICK, cardToPick);
+	} else {
+	    cardToPick = this.rating.suggestRandomPick();
+	    Debug.printfn(Debug.Level.INFO, "<%s> Random pick suggestion: %s",
+		    this, cardToPick);
+	    this.table.addInteraction(this, Table.Action.CARD_PICK, cardToPick);
 	}
 
-	// DEBUG:START
-	Debug.printfn(Debug.Level.INFO, "<%s> Random pick suggestion: %s",
-		this, this.rating.suggestRandomPick());
-	if (goalDistance[0] != null) {
-	    byte[] colorGoalValue =
-		    this.rating.goalValue((CardDeck.Color) goalDistance[0]);
-	    if (goalDistance[2] != null) {
-		Debug.printfn(Debug.Level.INFO,
-			"<%s> Goal distanes: [%s?](%d)=[%d:%d] [?%s](%d)",
-			this, goalDistance[0], goalDistance[1],
-			colorGoalValue[0], colorGoalValue[1], goalDistance[2],
-			goalDistance[3]);
-	    } else {
-		Debug.printfn(Debug.Level.INFO,
-			"<%s> Goal distanes: [%s?](%d)=[%d:%d]", this,
-			goalDistance[0], goalDistance[1], colorGoalValue[0],
-			colorGoalValue[1]);
+	// TODO: simple drop
+	for (Card card : this.cardStack.getCards()) {
+	    if ((!card.getType().equals(goalDistance[2]))
+		    && (!card.getColor().equals(goalDistance[0]))) {
+		cardToDrop = card;
+		break;
 	    }
-	} else if (goalDistance[2] != null) {
-	    Debug.printfn(Debug.Level.INFO, "<%s> Goal distanes: [?%s](%d)",
-		    this, goalDistance[2], goalDistance[3]);
 	}
-	// DEBUG:END
+	if (cardToDrop != null) {
+	    Debug.printfn(Debug.Level.INFO, "<%s> Drop suggestion: %s", this,
+		    cardToDrop);
+	    this.table.addInteraction(this, Table.Action.CARD_DROP, cardToDrop);
+	}
+
+	if (this.table.commitInteraction(this) == null) {
+	    // pick & drop successful, save new cards
+	    this.cardStack.removeCard(cardToDrop);
+	    this.cardStack.addCard(cardToPick);
+	}
     }
 }

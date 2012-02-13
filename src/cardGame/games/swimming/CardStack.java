@@ -45,14 +45,33 @@ public class CardStack {
      * @param value
      *            New value for the card. This value must fit into the bounds
      *            defined by the byte type.
-     * @see Byte#MIN_VALUE
-     * @see Byte#MAX_VALUE
      */
     final void setCardValue(final Card card, final float value) {
+	this.setCardValue(card, value, true);
+    }
+
+    /**
+     * @see #setCardValue(Card, float)
+     * 
+     * @param card
+     *            Card witch gets a new value
+     * @param value
+     *            The value to set
+     * @param enforceBounds
+     *            True to check value bounds
+     */
+    private void setCardValue(final Card card, final float value,
+	    final boolean enforceBounds) {
 	if (CARDS.indexOf(card) == -1) {
-	    throw new IllegalArgumentException("Unknown card specified.");
+	    throw new IllegalArgumentException("Unknown card specified ("
+		    + card + ").");
 	}
-	this.cardStack[CARDS.indexOf(card)] = this.enforceValueBounds(value);
+	if (enforceBounds) {
+	    this.cardStack[CARDS.indexOf(card)] =
+		    this.enforceValueBounds(value);
+	} else {
+	    this.cardStack[CARDS.indexOf(card)] = (byte) value;
+	}
     }
 
     /**
@@ -200,5 +219,25 @@ public class CardStack {
 	    return false;
 	}
 	return true;
+    }
+
+    /**
+     * Shorthand to set a card as being available.
+     * 
+     * @param card
+     *            The card to set as available
+     */
+    final void addCard(final Card card) {
+	this.setCardValue(card, CARD_AVAILABLE);
+    }
+
+    /**
+     * Remove a card from this stack.
+     * 
+     * @param card
+     *            The card to remove
+     */
+    final void removeCard(final Card card) {
+	this.setCardValue(card, CARD_UNAVAILABLE, false);
     }
 }

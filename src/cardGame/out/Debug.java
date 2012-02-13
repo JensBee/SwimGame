@@ -5,7 +5,7 @@ public class Debug {
     /** Toggles debugging. */
     private static final boolean DEBUG = true;
     /** Minimal debug level. All messages below this level will be omitted. */
-    private static final Level LEVEL = Level.TALK;
+    private static final Level LEVEL = Level.INFO;
     /** Output prefix. %s will be replaced with the level. */
     private static final String PREFIX = "[DBG:%s] ";
 

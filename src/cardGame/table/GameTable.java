@@ -65,7 +65,9 @@ public interface GameTable {
     void startNewGame();
 
     /**
-     * Player interaction with the table.
+     * Add a player interaction with the table. This can only be called by the
+     * current playing player. The list of interactions wont persist between
+     * rounds.
      * 
      * @param player
      *            The player who's interacting
@@ -73,10 +75,19 @@ public interface GameTable {
      *            The action to perform
      * @param data
      *            Data associated with the action
-     * @return An <code>Object</code> indicating the success of the interaction
      */
-    Object interact(CardPlayer player, Enum<? extends TableAction> action,
+    void addInteraction(CardPlayer player, Enum<? extends TableAction> action,
 	    Object data);
+
+    /**
+     * Commit interactions added with {@link addInteraction(CardPlayer, Enum,
+     * Object)}.
+     * 
+     * @param player
+     *            <code>Player</code> who commits his interactions
+     * @return The failing action, if any or null if all actions went ok
+     */
+    Enum<? extends TableAction> commitInteraction(CardPlayer player);
 
     /**
      * Get the list of player attending to this table.

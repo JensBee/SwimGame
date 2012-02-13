@@ -28,6 +28,9 @@ public class GameLogic implements CardGame, RoundBasedGame, EventReceiver {
     /** Maximum number of rounds to play without anybody winning. */
     private int maxRoundsToPlay;
 
+    private boolean roundIsClosed = false;
+    private CardPlayer roundClosingPlayer = null;
+
     /** Events emitted by this class. */
     // TODO: describe parameters
     enum Event implements CardGameEvent {
@@ -108,6 +111,8 @@ public class GameLogic implements CardGame, RoundBasedGame, EventReceiver {
 	    // Start gaming rounds:
 	    gameRound = 1;
 	    gameInteraction = 0;
+	    this.roundIsClosed = false;
+	    this.roundClosingPlayer = null;
 	    while (gameRound < this.maxRoundsToPlay) {
 		// debug:start
 		StringBuffer cardString = new StringBuffer();
@@ -118,6 +123,14 @@ public class GameLogic implements CardGame, RoundBasedGame, EventReceiver {
 		Debug.printfn(Debug.Level.INFO, "Table Cards: %s", cardString);
 		// debug:end
 		currentPlayer = currentPlayerIterator.next();
+
+		// if round is closed, was current player the closing one?
+		if (this.roundIsClosed
+			&& (currentPlayer.equals(this.roundClosingPlayer))) {
+		    // if so then stop here
+		    break;
+		}
+
 		EventBus.INSTANCE.fireEvent(Event.NEXTPLAYER, currentPlayer);
 		gameInteraction++;
 		if (gameInteraction == this.table.numberOfPlayers()) {
@@ -176,6 +189,10 @@ public class GameLogic implements CardGame, RoundBasedGame, EventReceiver {
 		    cardString.append(card);
 		}
 		Debug.printfn(Debug.Level.INFO, "Table cards: %s", cardString);
+		break;
+	    case CLOSE_CALL:
+		this.roundIsClosed = true;
+		this.roundClosingPlayer = (CardPlayer) data;
 		break;
 	    default:
 		break;

@@ -3,6 +3,7 @@ package cardGame.games.swimming;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
 
@@ -11,6 +12,7 @@ import cardGame.card.CardDeck.Deck;
 import cardGame.event.CardGameEvent;
 import cardGame.event.EventBus;
 import cardGame.event.EventReceiver;
+import cardGame.out.Debug;
 import cardGame.player.CardPlayer;
 import cardGame.table.GeneralGameTable;
 import cardGame.table.TableAction;
@@ -26,16 +28,20 @@ public class Table extends GeneralGameTable implements EventReceiver {
     private final EnumSet<Card> tableCards = EnumSet.noneOf(Card.class);
     /** Reference to the current playing player. */
     private CardPlayer currentPlayer;
-    /** Card picked by current player. */
-    private Card playerPickCard;
-    /** Card dropped by current player. */
-    private Card playerDropCard;
     /** Number of Cards initially passed to the user. */
     private static final byte INITIAL_CARDS_AMOUNT = 3;
+    /** True if the current round was closed. Prevents closing a second time. */
+    private boolean roundClosed = false;
+    /** Interactions stored by a player. */
+    private final EnumMap<Action, Object> interactions =
+	    new EnumMap<Action, Object>(Action.class);
 
     /**
      * Possible interactions with the table. These actions may be fired with an
      * arbitrary number of objects as associated data.
+     * 
+     * If no object data is documented here than it's obsolete and should be
+     * passed as <code>null</code>.
      */
     public enum Action implements TableAction {
 	/**
@@ -48,6 +54,8 @@ public class Table extends GeneralGameTable implements EventReceiver {
 	 * Data: <code>Card</code> that player wants to pick
 	 */
 	CARD_PICK,
+	/** Player want's to close this round. */
+	CLOSE,
 	/** Player finished his move. */
 	FINISHED;
     }
@@ -59,7 +67,22 @@ public class Table extends GeneralGameTable implements EventReceiver {
 	 * Data: <code>Collection&lt;Card&gt;</code> with the cards currently
 	 * available
 	 */
-	CARDS;
+	CARDS,
+	/**
+	 * Player dropped a card. <br/>
+	 * Data: <code>Card</code> that was dropped
+	 */
+	CARD_DROP,
+	/**
+	 * Player picked a card. <br/>
+	 * Data: <code>Card</code> that player was picked
+	 */
+	CARD_PICK,
+	/**
+	 * A player closed the round.<br/>
+	 * Data: <code>Player</code> that closed.
+	 */
+	CLOSE_CALL;
     }
 
     /**
@@ -94,13 +117,16 @@ public class Table extends GeneralGameTable implements EventReceiver {
 
     /**
      * Set an initial set of cards for the beginning player. This will also set
-     * the initial cards for the table.
+     * the initial state (cards, etc.) for the table.
      * 
      * @param player
      *            Player who should receive the cards
      */
     final void dealInitialCards(final CardPlayer player) {
+	// setup a new game
 	this.tableCards.clear();
+	this.roundClosed = false;
+
 	List<Card> cards = new ArrayList<Card>(INITIAL_CARDS_AMOUNT);
 	for (int i = 0; i < INITIAL_CARDS_AMOUNT; i++) {
 	    cards.add(this.dealCard());
@@ -129,45 +155,87 @@ public class Table extends GeneralGameTable implements EventReceiver {
 		Collections.unmodifiableSet(this.tableCards));
     }
 
+    /**
+     * Check if player is allowed to interact. In general this will only be the
+     * player whose current turn it is.
+     */
+    private boolean legitimatePlayer(final CardPlayer player) {
+	if (!player.equals(this.currentPlayer)) {
+	    throw new IllegalArgumentException(
+		    "Player interaction currently not allowed.");
+	}
+	return true;
+    }
+
     @Override
-    public final Object interact(final CardPlayer player,
+    public final void addInteraction(final CardPlayer player,
 	    final Enum<? extends TableAction> action, final Object data) {
+	this.legitimatePlayer(player);
 	if (!action.getClass().equals(Action.class)) {
 	    throw new IllegalArgumentException(String.format(
 		    "Given action '%s' was not of the expected type (%s).",
 		    action.getClass(), Action.class));
 	}
 
-	// Check if player is allowed to interact. In general this will only be
-	// the player whose current turn it is.
-	if (!player.equals(this.currentPlayer)) {
-	    throw new IllegalArgumentException(String.format(
-		    "Player interaction currently not allowed.",
-		    action.getClass(), Action.class));
+	// store interaction
+	this.interactions.put((Action) action, data);
+    }
+
+    @Override
+    public final Enum<? extends TableAction> commitInteraction(
+	    final CardPlayer player) {
+	boolean actionDone = false;
+	this.legitimatePlayer(player);
+
+	if (this.interactions.containsKey(Action.CARD_DROP)
+		&& (this.interactions.containsKey(Action.CARD_PICK))) {
+	    Card pickCard = (Card) this.interactions.get(Action.CARD_PICK);
+	    Card dropCard = (Card) this.interactions.get(Action.CARD_DROP);
+
+	    // try pick
+	    if (this.tableCards.remove(pickCard)) {
+		EventBus.INSTANCE.fireEvent(Event.CARD_PICK, pickCard);
+	    } else {
+		// failed
+		return Action.CARD_PICK;
+	    }
+	    // try drop
+	    if (this.tableCards.add(dropCard)) {
+		EventBus.INSTANCE.fireEvent(Event.CARD_DROP, dropCard);
+	    } else {
+		// failed
+		return Action.CARD_DROP;
+	    }
+
+	    Debug.printfn(Debug.Level.INFO, "Table <%s> drop:%s pick:%s",
+		    player, dropCard, pickCard);
+
+	    this.interactions.remove(Action.CARD_PICK);
+	    this.interactions.remove(Action.CARD_DROP);
+	    // there shouldn't be any more actions
+	    actionDone = true;
 	}
 
-	switch ((Action) action) {
-	case CARD_DROP:
-	    if (this.tableCards.contains(data)) {
-		return false;
+	for (Action action : this.interactions.keySet()) {
+	    if (actionDone) {
+		// this action is too much
+		return action;
 	    }
-	    this.playerDropCard = (Card) data;
-	    return true;
-	case CARD_PICK:
-	    if (this.tableCards.contains(data)) {
-		this.playerPickCard = (Card) data;
-		return true;
+	    switch (action) {
+	    case CLOSE:
+		if (!this.roundClosed) {
+		    Debug.printfn(Debug.Level.INFO,
+			    "Table <%s> Closed the round!", player);
+		    this.roundClosed = true;
+		    EventBus.INSTANCE.fireEvent(Event.CLOSE_CALL, player);
+		    actionDone = true;
+		}
+		break;
+	    default:
+		return action;
 	    }
-	    return false;
-	case FINISHED:
-	    if ((this.playerDropCard != null) && (this.playerPickCard != null)) {
-		return true;
-	    }
-	    return false;
-	default:
-	    break;
 	}
-	return false;
+	return null;
     }
 
     @Override
@@ -177,8 +245,7 @@ public class Table extends GeneralGameTable implements EventReceiver {
 	    switch ((GameLogic.Event) event) {
 	    case NEXTPLAYER:
 		this.currentPlayer = (CardPlayer) data;
-		this.playerPickCard = null;
-		this.playerDropCard = null;
+		this.interactions.clear();
 		break;
 	    default:
 		break;
